@@ -79,7 +79,7 @@ export function HomeScreen() {
           <span className="text-sm text-muted">{promotions.length ? `${promotions.length} on` : "From $49"}</span>
         </button>
         <button type="button" onClick={() => setView("insurer")} className="press flex w-full items-baseline justify-between border-b border-line py-4 text-left">
-          <span>Carrier book</span>
+          <span>Insurer invoice</span>
           <span className="text-sm tabular-nums text-muted">{usd(pilotMonth().total)}</span>
         </button>
         <button type="button" onClick={() => setView("operator")} className="press flex w-full items-baseline justify-between border-b border-line py-4 text-left">

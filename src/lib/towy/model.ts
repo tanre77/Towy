@@ -209,10 +209,10 @@ export type Company = {
 };
 
 export const coverageOptions: { id: Coverage; title: string; detail: string }[] = [
-  { id: "none", title: "No coverage", detail: "Member pays the bill. Shoulder takes 6% of that. No carrier is invoiced." },
-  { id: "roadside", title: "Roadside assist", detail: "Policy pays the first $125. The carrier pays Shoulder $18. The shop is paid in full." },
-  { id: "deductible", title: "$100 deductible", detail: "Member pays the first $100. The carrier pays Shoulder $18. The rest is untouched." },
-  { id: "full", title: "Tow fully covered", detail: "Insurance pays the shop in full. The carrier still pays Shoulder $18." },
+  { id: "none", title: "No coverage", detail: "Member pays the bill. Shoulder takes 6% of that. No insurance company is invoiced." },
+  { id: "roadside", title: "Roadside assist", detail: "Policy pays the first $125. The insurance company pays Shoulder $18. The shop is paid in full." },
+  { id: "deductible", title: "$100 deductible", detail: "Member pays the first $100. The insurance company pays Shoulder $18. The rest is untouched." },
+  { id: "full", title: "Tow fully covered", detail: "Insurance pays the shop in full. The insurance company still pays Shoulder $18." },
 ];
 
 export const locations: Location[] = [

@@ -31,7 +31,7 @@ export function Frame({ children }: { children: ReactNode }) {
             : view === "job"
               ? "Stop"
               : view === "insurer"
-                ? "Insurers"
+                ? "Invoice"
                 : view === "promote"
                   ? "Promote"
                   : "Shops";

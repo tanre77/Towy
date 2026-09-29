@@ -14,13 +14,13 @@ export function InsurerScreen() {
 
   return (
     <div className="rise flex flex-1 flex-col">
-      <p className="text-sm text-muted">Columbus · one carrier</p>
+      <p className="text-sm text-muted">What an insurance company pays</p>
       <h1 className="mt-2 text-5xl font-medium leading-none tabular-nums">{usd(book.total)}</h1>
-      <p className="mt-3 text-sm text-muted">A month, if they send {book.stops} stops. Put this in front of Grange.</p>
+      <p className="mt-3 text-sm text-muted">One city, one month, if they send {book.stops} stops. This is the number for Grange. The driver never sees it.</p>
 
       <div className="mt-8">
-        <Row k="Desk" v={usd(book.desk)} note="The book stays on. Shops pay nothing to be on it." />
-        <Row k="Each stop" v={usd(DISPATCH_FEE)} note="Invoiced to the carrier. Not on the member's bill. Not taken from the shop." />
+        <Row k="Desk" v={usd(book.desk)} note="The desk stays on for the month. Shops pay nothing to be on it." />
+        <Row k="Each stop" v={usd(DISPATCH_FEE)} note="Billed to the insurance company. Not on the member's bill. Not taken from the shop." />
         <Row k="Stops" v={String(book.stops)} note="Eight a night, thirty nights. A slice of one city, not the whole state." />
         <Row k="Stop fees" v={usd(book.dispatch)} note="A covered tow still pays. That is the point." />
       </div>

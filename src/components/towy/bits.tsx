@@ -75,7 +75,7 @@ export function Split({ quote }: { quote: Quote }) {
     ["Insurance", usd(quote.covered), false],
     ["Member", usd(quote.driverPays), false],
   ];
-  if (quote.dispatchFee > 0) rows.push(["Carrier pays Shoulder", usd(quote.dispatchFee), true]);
+  if (quote.dispatchFee > 0) rows.push(["Insurer pays Shoulder", usd(quote.dispatchFee), true]);
   if (quote.towyFee > 0) rows.push(["Shoulder 6%", usd(quote.towyFee), true]);
   rows.push(["Shop", usd(quote.operatorReceives), false]);
   return (

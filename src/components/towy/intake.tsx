@@ -423,7 +423,7 @@ export function IntakeScreen() {
           <h1 className="text-2xl font-medium tracking-tight">Coverage</h1>
           <p className="mt-2 text-sm text-muted">
             {job.source === "insurer"
-              ? "The carrier pays Shoulder $18. It is not on this bill."
+              ? "The insurance company pays Shoulder $18. It is not on this bill."
               : "Shoulder takes 6% only of what you still owe."}
           </p>
           <div className="mt-6 space-y-2">
