@@ -1,0 +1,661 @@
+export const TOWY_RATE = 0.06;
+export const ROADSIDE_CAP = 125;
+export const DEDUCTIBLE = 100;
+export const AFTER_HOURS_FEE = 40;
+
+export const SCENARIO = {
+  when: "Monday night",
+  place: "Columbus",
+  afterHours: true,
+};
+
+export type Drivetrain = "FWD" | "RWD" | "AWD" | "4WD";
+export type Position = "shoulder" | "lane" | "ditch" | "offroad";
+export type Side = "right" | "left" | "median" | "ramp";
+export type Coverage = "none" | "roadside" | "full" | "deductible";
+export type Equipment = "wheel-lift" | "flatbed";
+export type Traffic = "light" | "moderate" | "heavy";
+export type JobStatus = "draft" | "calling" | "quoted" | "enroute" | "checked" | "arrived" | "done";
+export type View = "home" | "intake" | "calling" | "quotes" | "job" | "insurer" | "operator";
+
+export type Vehicle = {
+  year: string;
+  make: string;
+  model: string;
+  drivetrain: Drivetrain;
+  tires: string;
+  ev: boolean;
+};
+
+export type Situation = {
+  starts: boolean;
+  rolls: boolean;
+  position: Position;
+  side: Side;
+  equipment: Equipment;
+  winch: boolean;
+  police: boolean;
+  equipmentTouched: boolean;
+  winchTouched: boolean;
+  policeTouched: boolean;
+};
+
+export type Quote = {
+  companyId: string;
+  etaMin: number;
+  miles: number;
+  hook: number;
+  mileage: number;
+  equipmentFee: number;
+  winchFee: number;
+  afterHours: number;
+  policeWait: number;
+  total: number;
+  covered: number;
+  driverPays: number;
+  towyFee: number;
+  operatorReceives: number;
+  note: string;
+};
+
+export type Review = {
+  id: string;
+  companyId: string;
+  author: string;
+  stars: number;
+  text: string;
+};
+
+export type CallResult = {
+  companyId: string;
+  available: boolean;
+  decline?: string;
+  quote?: Quote;
+};
+
+export type Job = {
+  id: string;
+  contactName: string;
+  contactPhone: string;
+  vehicle: Vehicle;
+  situation: Situation;
+  locationId: string;
+  coverage: Coverage;
+  coverageLocked: boolean;
+  calls: CallResult[];
+  selectedCompanyId: string | null;
+  status: JobStatus;
+  live: { etaMin: number; total: number; note: string } | null;
+  review: { stars: number; text: string } | null;
+  payment?: { method: "apple-pay"; amount: number } | null;
+  source: "member" | "insurer" | "seed";
+};
+
+export function trafficLabel(traffic: Traffic): string {
+  if (traffic === "heavy") return "Heavy traffic";
+  if (traffic === "moderate") return "Moderate traffic";
+  return "Light traffic";
+}
+
+export type Location = {
+  id: string;
+  road: string;
+  direction: string;
+  mile: string;
+  place: string;
+  traffic: Traffic;
+  note: string;
+};
+
+export type Company = {
+  id: string;
+  name: string;
+  phone: string;
+  yard: string;
+  rating: number;
+  reviewCount: number;
+  tags: string[];
+  evCertified: boolean;
+  canWinch: boolean;
+  canFlatbed: boolean;
+  hook: number;
+  perMile: number;
+  flatbed: number;
+  winch: number;
+  bias: number;
+  flatbedEta: number;
+  reviews: { author: string; stars: number; text: string }[];
+  miles: Record<string, number>;
+};
+
+export const coverageOptions: { id: Coverage; title: string; detail: string }[] = [
+  { id: "none", title: "No coverage", detail: "Member pays the whole tow. Towy's 6% applies to all of it." },
+  { id: "roadside", title: "Roadside assist", detail: "Policy pays the first $125. Towy's cut skips that part." },
+  { id: "deductible", title: "$100 deductible", detail: "Member pays the first $100. Insurance pays the rest, untouched." },
+  { id: "full", title: "Tow fully covered", detail: "Insurance pays the yard in full. Towy's coordination fee is $0." },
+];
+
+export const locations: Location[] = [
+  {
+    id: "i70-108",
+    road: "I-70",
+    direction: "Eastbound",
+    mile: "108.2",
+    place: "Bexley",
+    traffic: "heavy",
+    note: "Shoulder narrows at the Nelson Road exit.",
+  },
+  {
+    id: "i71-111",
+    road: "I-71",
+    direction: "Southbound",
+    mile: "111.0",
+    place: "Downtown",
+    traffic: "moderate",
+    note: "Innerbelt. Left lane is tight against the barrier.",
+  },
+  {
+    id: "sr315-4",
+    road: "SR-315",
+    direction: "Northbound",
+    mile: "4.1",
+    place: "Ohio State",
+    traffic: "heavy",
+    note: "Event traffic stacking toward Lane Avenue.",
+  },
+  {
+    id: "us33-12",
+    road: "US-33",
+    direction: "Westbound",
+    mile: "12.6",
+    place: "Dublin",
+    traffic: "light",
+    note: "Wide shoulder past the Frantz Road split.",
+  },
+  {
+    id: "i270-22",
+    road: "I-270",
+    direction: "Outer",
+    mile: "22.4",
+    place: "Easton",
+    traffic: "moderate",
+    note: "Outerbelt, east side. Ramp from Morse is slow.",
+  },
+];
+
+export const companies: Company[] = [
+  {
+    id: "scioto",
+    name: "Scioto Hook & Haul",
+    phone: "(614) 555-0142",
+    yard: "Franklinton",
+    rating: 4.7,
+    reviewCount: 312,
+    tags: ["Wheel-lift", "Flatbed"],
+    evCertified: false,
+    canWinch: true,
+    canFlatbed: true,
+    hook: 85,
+    perMile: 6.5,
+    flatbed: 60,
+    winch: 145,
+    bias: 1,
+    flatbedEta: 4,
+    reviews: [
+      { author: "Marisol A.", stars: 5, text: "Quoted the hook fee before they rolled. On I-71 in 22 minutes." },
+      { author: "Dev Patel", stars: 4, text: "Flatbed was clean. Dispatcher picked up on the second ring." },
+    ],
+    miles: { "i70-108": 6.2, "i71-111": 2.4, "sr315-4": 4.6, "us33-12": 11.2, "i270-22": 10.4 },
+  },
+  {
+    id: "olentangy",
+    name: "Olentangy Recovery",
+    phone: "(614) 555-0177",
+    yard: "Clintonville",
+    rating: 4.5,
+    reviewCount: 188,
+    tags: ["Winch", "Off-road"],
+    evCertified: false,
+    canWinch: true,
+    canFlatbed: true,
+    hook: 95,
+    perMile: 7,
+    flatbed: 70,
+    winch: 120,
+    bias: 3,
+    flatbedEta: 6,
+    reviews: [
+      { author: "Chris N.", stars: 5, text: "Jeep was in the ditch past Lane. Winch, no surprise add-on." },
+      { author: "Elena V.", stars: 4, text: "Slower than the app said, but the price held." },
+    ],
+    miles: { "i70-108": 9.1, "i71-111": 5.6, "sr315-4": 2.2, "us33-12": 6.4, "i270-22": 12.1 },
+  },
+  {
+    id: "outerbelt",
+    name: "OuterBelt Tow",
+    phone: "(614) 555-0108",
+    yard: "Easton",
+    rating: 4.8,
+    reviewCount: 540,
+    tags: ["Light duty", "Fast"],
+    evCertified: false,
+    canWinch: false,
+    canFlatbed: true,
+    hook: 75,
+    perMile: 5.5,
+    flatbed: 80,
+    winch: 0,
+    bias: -2,
+    flatbedEta: 5,
+    reviews: [
+      { author: "Jordan P.", stars: 5, text: "Fastest light-duty truck on the outerbelt. No winch, they said so up front." },
+      { author: "Sam Okonkwo", stars: 5, text: "Civic on the shoulder. Wheel-lift, cashless with roadside." },
+    ],
+    miles: { "i70-108": 8.4, "i71-111": 11.0, "sr315-4": 12.4, "us33-12": 14.2, "i270-22": 1.8 },
+  },
+  {
+    id: "northbank",
+    name: "North Bank Flatbeds",
+    phone: "(614) 555-0164",
+    yard: "Italian Village",
+    rating: 4.6,
+    reviewCount: 96,
+    tags: ["EV certified", "Flatbed"],
+    evCertified: true,
+    canWinch: true,
+    canFlatbed: true,
+    hook: 110,
+    perMile: 6,
+    flatbed: 45,
+    winch: 155,
+    bias: 2,
+    flatbedEta: 2,
+    reviews: [
+      { author: "Priya S.", stars: 5, text: "Model Y in transport mode. They knew not to drag it." },
+      { author: "Luis M.", stars: 4, text: "Pricier hook, cheaper flatbed. Net was fair." },
+    ],
+    miles: { "i70-108": 7.0, "i71-111": 3.3, "sr315-4": 3.8, "us33-12": 10.1, "i270-22": 11.0 },
+  },
+  {
+    id: "parsons",
+    name: "Parsons Night Shift",
+    phone: "(614) 555-0190",
+    yard: "South Side",
+    rating: 4.2,
+    reviewCount: 74,
+    tags: ["After hours", "Budget"],
+    evCertified: false,
+    canWinch: true,
+    canFlatbed: true,
+    hook: 70,
+    perMile: 7,
+    flatbed: 90,
+    winch: 165,
+    bias: 6,
+    flatbedEta: 8,
+    reviews: [
+      { author: "Andy Cole", stars: 4, text: "Late truck, honest price. Dispatcher stayed on the line." },
+      { author: "Renee H.", stars: 3, text: "ETA slipped in the rain. They called before I had to." },
+    ],
+    miles: { "i70-108": 4.8, "i71-111": 4.1, "sr315-4": 8.2, "us33-12": 15.5, "i270-22": 9.2 },
+  },
+];
+
+export const vehiclePresets: { label: string; vehicle: Vehicle }[] = [
+  { label: "Civic", vehicle: { year: "2019", make: "Honda", model: "Civic", drivetrain: "FWD", tires: "215/55R16", ev: false } },
+  { label: "Camry", vehicle: { year: "2018", make: "Toyota", model: "Camry", drivetrain: "FWD", tires: "215/55R17", ev: false } },
+  { label: "F-150", vehicle: { year: "2021", make: "Ford", model: "F-150", drivetrain: "4WD", tires: "275/65R18", ev: false } },
+  { label: "Model Y", vehicle: { year: "2023", make: "Tesla", model: "Model Y", drivetrain: "AWD", tires: "255/45R19", ev: true } },
+  { label: "Wrangler", vehicle: { year: "2016", make: "Jeep", model: "Wrangler", drivetrain: "4WD", tires: "255/75R17", ev: false } },
+];
+
+export function locationById(id: string): Location {
+  return locations.find((l) => l.id === id) ?? locations[0];
+}
+
+export function companyById(id: string): Company | undefined {
+  return companies.find((c) => c.id === id);
+}
+
+export function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+export function usd(n: number): string {
+  return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
+export function positionLabel(position: Position): string {
+  switch (position) {
+    case "shoulder":
+      return "On the shoulder";
+    case "lane":
+      return "In a live lane";
+    case "ditch":
+      return "In the ditch";
+    case "offroad":
+      return "Off the roadway";
+  }
+}
+
+export function sideLabel(side: Side): string {
+  switch (side) {
+    case "right":
+      return "Right side";
+    case "left":
+      return "Left side";
+    case "median":
+      return "Median";
+    case "ramp":
+      return "On a ramp";
+  }
+}
+
+export function equipmentLabel(equipment: Equipment): string {
+  return equipment === "flatbed" ? "Flatbed" : "Wheel-lift truck";
+}
+
+export function recommendEquipment(vehicle: Vehicle, situation: Pick<Situation, "starts" | "rolls" | "position">): Equipment {
+  if (vehicle.ev) return "flatbed";
+  if (!situation.rolls) return "flatbed";
+  if ((vehicle.drivetrain === "AWD" || vehicle.drivetrain === "4WD") && !situation.starts) return "flatbed";
+  if (situation.position === "offroad") return "flatbed";
+  return "wheel-lift";
+}
+
+export function equipmentReason(vehicle: Vehicle, situation: Situation): string {
+  if (vehicle.ev) return "Electric. Wheels stay on a flatbed so the drivetrain is not dragged.";
+  if (!situation.rolls) return "It does not roll. A wheel-lift is the wrong truck.";
+  if ((vehicle.drivetrain === "AWD" || vehicle.drivetrain === "4WD") && !situation.starts) {
+    return "All-wheel drive that will not start can be damaged on a wheel-lift.";
+  }
+  if (situation.position === "offroad") return "Once it is winched up, it goes on a flatbed.";
+  return "It rolls and it is not electric. A wheel-lift truck is enough.";
+}
+
+export function recommendWinch(position: Position): boolean {
+  return position === "ditch" || position === "offroad";
+}
+
+export function winchReason(position: Position): string {
+  if (position === "ditch" || position === "offroad") return "Fish-out. The truck needs a winch.";
+  return "Still on pavement. No winch.";
+}
+
+export function recommendPolice(position: Position, side: Side, traffic: Traffic): boolean {
+  if (position === "lane") return true;
+  if ((side === "median" || side === "ramp") && traffic !== "light") return true;
+  return false;
+}
+
+export function policeReason(position: Position, side: Side, traffic: Traffic): string {
+  const load = traffic === "heavy" ? "heavy" : traffic === "moderate" ? "moving" : "light";
+  if (position === "lane") return `You are in a live lane and traffic is ${load}. Ask for an officer before the truck arrives.`;
+  if (side === "median" && traffic !== "light") return `You are in the median and traffic is ${load}. A marked unit is worth the wait.`;
+  if (side === "ramp" && traffic === "heavy") return "The ramp is backed up. An officer keeps the merge from closing on the truck.";
+  if (traffic === "heavy") return "Traffic is heavy, but you are out of the lane. An officer is optional.";
+  return `Traffic is ${load} and you are out of the lane. An officer is optional.`;
+}
+
+export function splitBill(total: number, coverage: Coverage) {
+  const covered =
+    coverage === "full" ? total : coverage === "roadside" ? Math.min(ROADSIDE_CAP, total) : coverage === "deductible" ? Math.max(0, total - DEDUCTIBLE) : 0;
+  const driverPays = round2(Math.max(0, total - covered));
+  const towyFee = round2(driverPays * TOWY_RATE);
+  const operatorReceives = round2(total - towyFee);
+  return {
+    covered: round2(covered),
+    driverPays,
+    towyFee,
+    operatorReceives,
+  };
+}
+
+export function recomputeSituation(job: Job): Job {
+  const location = locationById(job.locationId);
+  const situation: Situation = { ...job.situation };
+  if (!situation.equipmentTouched) situation.equipment = recommendEquipment(job.vehicle, situation);
+  if (!situation.winchTouched) situation.winch = recommendWinch(situation.position);
+  if (!situation.policeTouched) situation.police = recommendPolice(situation.position, situation.side, location.traffic);
+  return { ...job, situation };
+}
+
+function quoteFor(company: Company, job: Job): Quote {
+  const miles = company.miles[job.locationId] ?? 8;
+  const location = locationById(job.locationId);
+  const flatbed = job.situation.equipment === "flatbed";
+  const hook = company.hook;
+  const mileage = round2(miles * company.perMile);
+  const equipmentFee = flatbed ? company.flatbed : 0;
+  const winchFee = job.situation.winch ? company.winch : 0;
+  const afterHours = SCENARIO.afterHours ? AFTER_HOURS_FEE : 0;
+  const policeWait = job.situation.police ? 25 : 0;
+  const total = round2(hook + mileage + equipmentFee + winchFee + afterHours + policeWait);
+  const money = splitBill(total, job.coverage);
+  const trafficAdd = location.traffic === "heavy" ? 8 : location.traffic === "moderate" ? 4 : 1;
+  const etaMin = Math.max(12, Math.min(75, Math.round(8 + miles * 1.65 + company.bias + trafficAdd + (flatbed ? company.flatbedEta : 0) + (SCENARIO.afterHours ? 3 : 0))));
+  const notes: string[] = [];
+  if (job.vehicle.ev && !company.evCertified) notes.push("Not EV-certified. Confirm transport mode before loading.");
+  if (job.vehicle.ev && company.evCertified) notes.push("EV-certified flatbed.");
+  if (job.situation.police) notes.push("They will stage until the officer is on scene.");
+  if (!notes.length) notes.push("Price includes the Monday night rate.");
+  return {
+    companyId: company.id,
+    etaMin,
+    miles,
+    hook,
+    mileage,
+    equipmentFee,
+    winchFee,
+    afterHours,
+    policeWait,
+    total,
+    ...money,
+    note: notes[0],
+  };
+}
+
+export function buildCalls(job: Job): CallResult[] {
+  const ready = recomputeSituation(job);
+  const ranked = [...companies].sort((a, b) => (a.miles[ready.locationId] ?? 99) - (b.miles[ready.locationId] ?? 99));
+  const results: CallResult[] = [];
+  for (const company of ranked) {
+    if (ready.situation.winch && !company.canWinch) {
+      results.push({ companyId: company.id, available: false, decline: "No winch on tonight's truck." });
+    } else if (ready.situation.equipment === "flatbed" && !company.canFlatbed) {
+      results.push({ companyId: company.id, available: false, decline: "No flatbed free." });
+    } else {
+      results.push({ companyId: company.id, available: true, quote: quoteFor(company, ready) });
+    }
+    const got = results.filter((r) => r.quote).length;
+    if (got >= 3) break;
+  }
+  return results;
+}
+
+export function companyScore(company: Company, reviews: Review[]) {
+  const extra = reviews.filter((r) => r.companyId === company.id);
+  const count = company.reviewCount + extra.length;
+  const sum = company.rating * company.reviewCount + extra.reduce((acc, r) => acc + r.stars, 0);
+  return { rating: count ? sum / count : company.rating, count };
+}
+
+export function callLines(company: Company, job: Job, result: CallResult): string[] {
+  const location = locationById(job.locationId);
+  const vehicle = `${job.vehicle.year} ${job.vehicle.make} ${job.vehicle.model}`.trim();
+  const open = [
+    `${company.name}. Dispatcher speaking.`,
+    `${location.road} ${location.direction.toLowerCase()}, mile ${location.mile}, ${location.place}. ${sideLabel(job.situation.side).toLowerCase()}, ${positionLabel(job.situation.position).toLowerCase()}.`,
+    `${vehicle}, ${job.vehicle.drivetrain}${job.vehicle.ev ? ", electric" : ""}. Tires ${job.vehicle.tires || "not listed"}.`,
+    `${job.situation.starts ? "It starts." : "It will not start."} ${job.situation.rolls ? "It rolls." : "It does not roll."} ${job.situation.police ? "Officer requested." : "No officer requested."}`,
+  ];
+  if (!result.available || !result.quote) {
+    return [...open, result.decline ?? "We can't take this one."];
+  }
+  const quote = result.quote;
+  return [
+    ...open,
+    `${equipmentLabel(job.situation.equipment)}${job.situation.winch ? " and a winch" : ""}. We can be there in ${quote.etaMin} minutes.`,
+    `Estimate ${usd(quote.total)}. ${quote.note}`,
+  ];
+}
+
+export function halfwayUpdate(job: Job): { etaMin: number; total: number; note: string } {
+  const location = locationById(job.locationId);
+  const quote = job.calls.find((c) => c.companyId === job.selectedCompanyId)?.quote;
+  const current = job.live?.etaMin ?? quote?.etaMin ?? 20;
+  const total = quote?.total ?? job.live?.total ?? 0;
+  const slip = location.traffic === "heavy" ? 3 : 0;
+  const etaMin = Math.max(6, Math.round(current * 0.48) + slip);
+  const note = job.situation.police
+    ? "Officer is on the shoulder. Lane is moving. Price held."
+    : slip
+      ? "Heavy traffic added a few minutes. Price held."
+      : "Clear run from the yard. Price held.";
+  return { etaMin, total, note };
+}
+
+export function blankJob(source: Job["source"] = "member"): Job {
+  return recomputeSituation({
+    id: `job-${Math.random().toString(36).slice(2, 8)}`,
+    contactName: "",
+    contactPhone: "",
+    vehicle: { year: "2019", make: "Honda", model: "Civic", drivetrain: "FWD", tires: "215/55R16", ev: false },
+    situation: {
+      starts: false,
+      rolls: true,
+      position: "shoulder",
+      side: "right",
+      equipment: "wheel-lift",
+      winch: false,
+      police: false,
+      equipmentTouched: false,
+      winchTouched: false,
+      policeTouched: false,
+    },
+    locationId: "i70-108",
+    coverage: "roadside",
+    coverageLocked: false,
+    calls: [],
+    selectedCompanyId: null,
+    status: "draft",
+    live: null,
+    review: null,
+    payment: null,
+    source,
+  });
+}
+
+export function applySample(job: Job, which: "civic" | "ev"): Job {
+  if (which === "ev") {
+    return recomputeSituation({
+      ...job,
+      contactName: job.contactName || "Alex Chen",
+      contactPhone: job.contactPhone || "(614) 555-0198",
+      vehicle: { year: "2023", make: "Tesla", model: "Model Y", drivetrain: "AWD", tires: "255/45R19", ev: true },
+      situation: {
+        ...job.situation,
+        starts: false,
+        rolls: false,
+        position: "ditch",
+        side: "right",
+        equipmentTouched: false,
+        winchTouched: false,
+        policeTouched: false,
+      },
+      locationId: "sr315-4",
+      coverage: job.coverageLocked ? job.coverage : "full",
+    });
+  }
+  return recomputeSituation({
+    ...job,
+    contactName: job.contactName || "Alex Chen",
+    contactPhone: job.contactPhone || "(614) 555-0198",
+    vehicle: { year: "2019", make: "Honda", model: "Civic", drivetrain: "FWD", tires: "215/55R16", ev: false },
+    situation: {
+      ...job.situation,
+      starts: false,
+      rolls: true,
+      position: "shoulder",
+      side: "right",
+      equipmentTouched: false,
+      winchTouched: false,
+      policeTouched: false,
+    },
+    locationId: "i70-108",
+    coverage: job.coverageLocked ? job.coverage : "roadside",
+  });
+}
+
+function seedJob(partial: Pick<Job, "id" | "contactName" | "vehicle" | "situation" | "locationId" | "coverage" | "status" | "selectedCompanyId">): Job {
+  const base = recomputeSituation({
+    ...blankJob("seed"),
+    ...partial,
+    contactPhone: "(614) 555-0133",
+    coverageLocked: false,
+    calls: [],
+    live: null,
+    review: null,
+    source: "seed",
+  });
+  const calls = buildCalls(base);
+  const selected = calls.find((c) => c.companyId === partial.selectedCompanyId)?.quote;
+  return {
+    ...base,
+    calls,
+    live: selected ? { etaMin: selected.etaMin, total: selected.total, note: "Yard accepted. Truck is rolling." } : null,
+  };
+}
+
+export const seedJobs: Job[] = [
+  seedJob({
+    id: "seed-camry",
+    contactName: "Riley Brooks",
+    vehicle: { year: "2018", make: "Toyota", model: "Camry", drivetrain: "FWD", tires: "215/55R17", ev: false },
+    situation: {
+      starts: false,
+      rolls: true,
+      position: "shoulder",
+      side: "right",
+      equipment: "wheel-lift",
+      winch: false,
+      police: false,
+      equipmentTouched: true,
+      winchTouched: true,
+      policeTouched: true,
+    },
+    locationId: "i71-111",
+    coverage: "roadside",
+    status: "enroute",
+    selectedCompanyId: "scioto",
+  }),
+  seedJob({
+    id: "seed-f150",
+    contactName: "Morgan Ellis",
+    vehicle: { year: "2021", make: "Ford", model: "F-150", drivetrain: "4WD", tires: "275/65R18", ev: false },
+    situation: {
+      starts: false,
+      rolls: false,
+      position: "ditch",
+      side: "right",
+      equipment: "flatbed",
+      winch: true,
+      police: true,
+      equipmentTouched: true,
+      winchTouched: true,
+      policeTouched: true,
+    },
+    locationId: "i270-22",
+    coverage: "deductible",
+    status: "quoted",
+    selectedCompanyId: null,
+  }),
+];
+
+export function phoneOk(phone: string): boolean {
+  return phone.replace(/\D/g, "").length >= 10;
+}
+
+export function vehicleOk(vehicle: Vehicle): boolean {
+  return Boolean(vehicle.year.trim() && vehicle.make.trim() && vehicle.model.trim());
+}

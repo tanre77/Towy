@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0e1014;
+  --color-surface: #171a20;
+  --color-surface-2: #21262e;
+  --color-fg: #f2f4f6;
+  --color-muted: #9aa3ae;
+  --color-subtle: #6d7682;
+  --color-line: #2c333c;
+  --color-accent: #c5d0dc;
+  --color-accent-fg: #121418;
+  --color-ok: #8faf96;
+  --color-warn: #c4a574;
+  --color-danger: #c48780;
+  --font-sans: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-fg);
+    min-height: 100dvh;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+}
+
+.safe-t {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+.safe-b {
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
+}
+
+.press {
+  transition-property: transform, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.press:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.rise {
+  animation: towy-rise 250ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.call-ring {
+  animation: towy-ring 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes towy-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes towy-ring {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .call-ring {
+    animation: none;
+  }
+
+  .press:active:not(:disabled) {
+    transform: none;
+  }
+}
