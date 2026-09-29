@@ -138,6 +138,7 @@ export type Job = {
   source: "member" | "insurer" | "seed";
   origin: { lat: number; lng: number; source: "device" | "mile" } | null;
   drop: { shop: DropShop; miles: number | null } | null;
+  acceptedAt: number | null;
 };
 
 export function atCurb(help: HelpKind): boolean {
@@ -464,6 +465,22 @@ export function companyById(id: string): Company | undefined {
   return companies.find((c) => c.id === id);
 }
 
+export function truckPoint(job: Job, now = Date.now()): { lat: number; lng: number; leftMin: number } | null {
+  if (job.status !== "enroute" && job.status !== "checked" && job.status !== "arrived") return null;
+  const company = job.selectedCompanyId ? companyById(job.selectedCompanyId) : undefined;
+  if (!company) return null;
+  const spot = job.origin ?? locationById(job.locationId);
+  if (job.status === "arrived") return { lat: spot.lat, lng: spot.lng, leftMin: 0 };
+  const etaMin = job.calls.find((call) => call.companyId === company.id)?.quote?.etaMin ?? job.live?.etaMin ?? 20;
+  const started = job.acceptedAt ?? now;
+  const progress = Math.min(1, Math.max(0, (now - started) / (etaMin * 4000)));
+  return {
+    lat: company.lat + (spot.lat - company.lat) * progress,
+    lng: company.lng + (spot.lng - company.lng) * progress,
+    leftMin: Math.max(0, Math.ceil(etaMin * (1 - progress))),
+  };
+}
+
 export function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
@@ -764,6 +781,7 @@ export function blankJob(source: Job["source"] = "member"): Job {
     source,
     origin: null,
     drop: null,
+    acceptedAt: null,
   });
 }
 
@@ -824,6 +842,10 @@ function seedJob(partial: Pick<Job, "id" | "contactName" | "vehicle" | "situatio
   return {
     ...base,
     calls,
+    acceptedAt:
+      base.status === "enroute" || base.status === "checked"
+        ? Date.now() - Math.round((selected?.etaMin ?? 20) * 4000 * 0.4)
+        : null,
     live: selected ? { etaMin: selected.etaMin, total: selected.total, note: "Shop accepted. Truck is rolling." } : null,
   };
 }

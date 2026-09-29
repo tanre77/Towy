@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Btn } from "@/components/towy/bits";
-import { CarMap } from "@/components/towy/map";
-import { companies, companyById, carColorHex, carMark, locations, pilotMonth, usd, vehiclePresets, type Vehicle } from "@/lib/towy/model";
+import { CarMap, useTruckSpot } from "@/components/towy/map";
+import { companies, companyById, carColorHex, carMark, locationById, locations, pilotMonth, usd, vehiclePresets, type Vehicle } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
 export function HomeScreen() {
@@ -17,6 +17,9 @@ export function HomeScreen() {
   const yard = resume?.selectedCompanyId ? companyById(resume.selectedCompanyId) : undefined;
   const quote = resume?.calls.find((call) => call.companyId === resume.selectedCompanyId)?.quote;
   const here = locations[0];
+  const rolling = resume && (resume.status === "enroute" || resume.status === "checked" || resume.status === "arrived") ? resume : null;
+  const truck = useTruckSpot(rolling);
+  const incident = rolling ? (rolling.origin ?? locationById(rolling.locationId)) : null;
   const [car, setCar] = useState({ lat: here.lat, lng: here.lng, device: false });
 
   useEffect(() => {
@@ -48,7 +51,15 @@ export function HomeScreen() {
 
   return (
     <div className="rise flex flex-1 flex-col">
-      <CarMap car={{ ...car, color: shown.color, plate: shown.plate }} pins={pins} />
+      <CarMap
+        car={
+          incident && rolling
+            ? { lat: incident.lat, lng: incident.lng, color: rolling.vehicle.color, plate: rolling.vehicle.plate, model: rolling.vehicle.model }
+            : { ...car, color: shown.color, plate: shown.plate, model: shown.model }
+        }
+        pins={pins}
+        truck={truck}
+      />
       <div className="mt-3 flex gap-2 overflow-x-auto" role="radiogroup" aria-label="Car on the map">
         {choices.map((item) => {
           const selected = item.vehicle.make === shown.make && item.vehicle.model === shown.model && (item.vehicle.plate ?? "") === (shown.plate ?? "");
@@ -73,7 +84,13 @@ export function HomeScreen() {
       </div>
       <div className="mt-3 flex items-baseline justify-between gap-3">
         <p className="text-sm text-muted">
-          {shown.make ? carMark(shown) : car.device ? "Your car" : `${here.road} ${here.mile}, until this phone shares where the car is`}
+          {truck && yard
+            ? `${yard.name} is closing the gap. ${truck.leftMin === 0 ? "On scene." : `${truck.leftMin} min.`}`
+            : shown.make
+              ? carMark(shown)
+              : car.device
+                ? "Your car"
+                : `${here.road} ${here.mile}, until this phone shares where the car is`}
         </p>
         {!car.device ? (
           <button

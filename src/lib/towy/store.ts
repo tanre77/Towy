@@ -161,6 +161,7 @@ function normalizeJob(job: Job): Job {
     },
     origin: job.origin ?? null,
     drop: job.drop ?? null,
+    acceptedAt: job.acceptedAt ?? null,
     situation: {
       ...job.situation,
       spare: job.situation?.spare ?? true,
@@ -384,6 +385,7 @@ export const useTowy = create<State>((set, get) => ({
           selectedCompanyId: companyId,
           status: "enroute",
           payment: payment ?? null,
+          acceptedAt: Date.now(),
           live: { etaMin: quote.etaMin, total: quote.total, note: "Shop accepted. Truck is rolling." },
         };
       }),
@@ -483,6 +485,7 @@ export const useTowy = create<State>((set, get) => ({
           ...job,
           selectedCompanyId: yardId,
           status: "enroute",
+          acceptedAt: Date.now(),
           live: { etaMin: quote.etaMin, total: quote.total, note: "Accepted from the shop board." },
         };
       }),

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Btn, LineItems, Split, Stars } from "@/components/towy/bits";
+import { CarMap, useTruckSpot } from "@/components/towy/map";
 import { companyById, dropFor, locationById, usd } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
@@ -32,7 +33,9 @@ export function JobScreen() {
   const quote = job.calls.find((call) => call.companyId === job.selectedCompanyId)?.quote;
   const location = locationById(job.locationId);
   const drop = dropFor(job);
-  const liveEta = job.live?.etaMin ?? quote?.etaMin ?? 0;
+  const truck = useTruckSpot(job);
+  const spot = job.origin ?? location;
+  const liveEta = truck ? truck.leftMin : (job.live?.etaMin ?? quote?.etaMin ?? 0);
   const at = stepIndex(job.status);
 
   function checkIn() {
@@ -45,7 +48,12 @@ export function JobScreen() {
 
   return (
     <div className="rise flex flex-1 flex-col">
-      <p className="text-sm text-muted">
+      <CarMap
+        car={{ lat: spot.lat, lng: spot.lng, color: job.vehicle.color, plate: job.vehicle.plate, model: job.vehicle.model }}
+        pins={[]}
+        truck={truck ? { lat: truck.lat, lng: truck.lng } : null}
+      />
+      <p className="mt-3 text-sm text-muted">
         {location.road} mile {location.mile} · {location.place}
         {drop ? ` · ${drop.shop.name}` : ""}
       </p>
