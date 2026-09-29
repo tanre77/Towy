@@ -16,6 +16,45 @@ struct Vehicle: Codable, Equatable {
     var drivetrain: Drivetrain
     var tires: String
     var ev: Bool
+    var color: String = ""
+    var plate: String = ""
+
+    enum CodingKeys: String, CodingKey { case year, make, model, drivetrain, tires, ev, color, plate }
+
+    init(year: String, make: String, model: String, drivetrain: Drivetrain, tires: String, ev: Bool, color: String = "", plate: String = "") {
+        self.year = year
+        self.make = make
+        self.model = model
+        self.drivetrain = drivetrain
+        self.tires = tires
+        self.ev = ev
+        self.color = color
+        self.plate = plate
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        year = try c.decode(String.self, forKey: .year)
+        make = try c.decode(String.self, forKey: .make)
+        model = try c.decode(String.self, forKey: .model)
+        drivetrain = try c.decode(Drivetrain.self, forKey: .drivetrain)
+        tires = try c.decode(String.self, forKey: .tires)
+        ev = try c.decode(Bool.self, forKey: .ev)
+        color = try c.decodeIfPresent(String.self, forKey: .color) ?? ""
+        plate = try c.decodeIfPresent(String.self, forKey: .plate) ?? ""
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(year, forKey: .year)
+        try c.encode(make, forKey: .make)
+        try c.encode(model, forKey: .model)
+        try c.encode(drivetrain, forKey: .drivetrain)
+        try c.encode(tires, forKey: .tires)
+        try c.encode(ev, forKey: .ev)
+        try c.encode(color, forKey: .color)
+        try c.encode(plate, forKey: .plate)
+    }
 }
 
 struct Situation: Codable, Equatable {

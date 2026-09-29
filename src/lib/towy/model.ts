@@ -30,7 +30,22 @@ export type Vehicle = {
   drivetrain: Drivetrain;
   tires: string;
   ev: boolean;
+  color?: string;
+  plate?: string;
 };
+
+export const carColors: { id: string; label: string; hex: string }[] = [
+  { id: "white", label: "White", hex: "#F2F4F6" },
+  { id: "silver", label: "Silver", hex: "#C5D0DC" },
+  { id: "black", label: "Black", hex: "#2A2E35" },
+  { id: "red", label: "Red", hex: "#A14A44" },
+  { id: "blue", label: "Blue", hex: "#3E5C78" },
+  { id: "green", label: "Green", hex: "#3E5C4A" },
+];
+
+export function carColorHex(id: string | undefined): string {
+  return carColors.find((item) => item.id === id)?.hex ?? "#F2F4F6";
+}
 
 export type SavedCar = {
   id: string;
@@ -41,6 +56,12 @@ export type SavedCar = {
 
 export function carLabel(vehicle: Vehicle): string {
   return [vehicle.year, vehicle.make, vehicle.model].filter((part) => part.trim()).join(" ");
+}
+
+export function carMark(vehicle: Vehicle): string {
+  const color = carColors.find((item) => item.id === vehicle.color)?.label;
+  const plate = vehicle.plate?.trim().toUpperCase();
+  return [color, carLabel(vehicle), plate].filter(Boolean).join(" · ");
 }
 
 export type Situation = {

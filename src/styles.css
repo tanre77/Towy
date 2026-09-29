@@ -146,6 +146,23 @@
   box-shadow: 0 0 0 7px rgba(242, 244, 246, 0.16);
 }
 
+.car-mark {
+  display: flex;
+  width: 72px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.car-plate {
+  margin-top: 4px;
+  border-radius: 3px;
+  background: #f2f4f6;
+  padding: 0 4px;
+  color: #121418;
+  font: 600 10px/14px Barlow, sans-serif;
+  letter-spacing: 0.06em;
+}
+
 .shop-pin {
   width: 12px;
   height: 12px;

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Btn, Choice, Field, TextInput } from "@/components/towy/bits";
 import {
-  carLabel,
+  carColors,
+  carMark,
   coverageOptions,
   dropFor,
   equipmentLabel,
@@ -110,7 +111,7 @@ export function IntakeScreen() {
         <section>
           <h1 className="text-2xl font-medium tracking-tight">What do you need?</h1>
           <p className="mt-2 text-sm text-muted">On the road, or the small jobs that never need a bay.</p>
-          {garage[0] ? <p className="mt-2 text-sm text-muted">{carLabel(garage[0].vehicle)} is saved. Continue skips the vehicle screen.</p> : null}
+          {garage[0] ? <p className="mt-2 text-sm text-muted">{carMark(garage[0].vehicle)} is saved. Continue skips the vehicle screen.</p> : null}
           <div className="mt-6">
             <p className="mb-1 text-sm text-muted">On the road</p>
             {helpOptions.filter((option) => !atCurb(option.id) && option.id !== "tow").map((option) => (
@@ -146,10 +147,10 @@ export function IntakeScreen() {
                 {garage.map((car) => (
                   <Choice
                     key={car.id}
-                    selected={carLabel(job.vehicle) === carLabel(car.vehicle) && job.contactPhone === car.contactPhone}
+                    selected={carMark(job.vehicle) === carMark(car.vehicle) && job.contactPhone === car.contactPhone}
                     onClick={() => useSavedCar(car.id)}
                   >
-                    <span className="block text-fg">{carLabel(car.vehicle)}</span>
+                    <span className="block text-fg">{carMark(car.vehicle)}</span>
                     <span className="mt-1 block text-sm text-muted">
                       {car.contactName} · {car.vehicle.drivetrain}
                       {car.vehicle.ev ? " · electric" : ""}
@@ -195,6 +196,36 @@ export function IntakeScreen() {
                 <TextInput value={job.vehicle.model} onChange={(e) => patchVehicle({ model: e.target.value })} />
               </Field>
             </div>
+            <Field label="License plate">
+              <TextInput
+                value={job.vehicle.plate ?? ""}
+                onChange={(e) => patchVehicle({ plate: e.target.value.toUpperCase() })}
+                placeholder="ABC 1234"
+                autoCapitalize="characters"
+                maxLength={8}
+              />
+            </Field>
+            <div>
+              <p className="mb-2 text-sm font-medium text-muted">Color</p>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Color">
+                {carColors.map((swatch) => {
+                  const on = job.vehicle.color === swatch.id;
+                  return (
+                    <button
+                      key={swatch.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => patchVehicle({ color: swatch.id })}
+                      className={`press inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm ${on ? "text-fg" : "text-muted"}`}
+                    >
+                      <span className="size-4 rounded-full border border-line" style={{ background: swatch.hex }} />
+                      {swatch.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <Field label="Tire size">
               <TextInput value={job.vehicle.tires} onChange={(e) => patchVehicle({ tires: e.target.value })} placeholder="215/55R16" />
             </Field>
@@ -230,7 +261,7 @@ export function IntakeScreen() {
           <h1 className="text-2xl font-medium tracking-tight">{atCurb(job.help) ? "Where it sits" : "Situation"}</h1>
           {garage.length && vehicleOk(job.vehicle) ? (
             <button type="button" className="press mt-2 text-sm text-muted" onClick={() => setStep(1)}>
-              {carLabel(job.vehicle)} · different car
+              {carMark(job.vehicle)} · different car
             </button>
           ) : null}
           <div className="mt-6 space-y-5">
@@ -442,7 +473,7 @@ export function IntakeScreen() {
           {job.coverageLocked ? <p className="mt-3 text-sm text-muted">Harbor Mutual locked this member to roadside assist.</p> : null}
           <dl className="mt-6 text-sm">
             <Row k="Member" v={job.contactName || "—"} />
-            <Row k="Vehicle" v={`${job.vehicle.year} ${job.vehicle.make} ${job.vehicle.model}`} />
+            <Row k="Vehicle" v={carMark(job.vehicle)} />
             <Row k="Stop" v={`${location.road} mile ${location.mile}, ${sideLabel(job.situation.side).toLowerCase()}`} />
             <Row k="Work" v={workLabel(job)} />
             {shopDrop ? (

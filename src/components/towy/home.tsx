@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Btn } from "@/components/towy/bits";
 import { CarMap } from "@/components/towy/map";
-import { companies, companyById, locations, pilotMonth, usd } from "@/lib/towy/model";
+import { companies, companyById, carColorHex, carMark, locations, pilotMonth, usd, vehiclePresets, type Vehicle } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
 export function HomeScreen() {
@@ -9,6 +9,9 @@ export function HomeScreen() {
   const startJob = useTowy((s) => s.startJob);
   const resetDemo = useTowy((s) => s.resetDemo);
   const promotions = useTowy((s) => s.promotions);
+  const garage = useTowy((s) => s.garage);
+  const useSavedCar = useTowy((s) => s.useSavedCar);
+  const [picked, setPicked] = useState<Vehicle | null>(null);
   const job = useActiveJob();
   const resume = job && job.status !== "draft" ? job : null;
   const yard = resume?.selectedCompanyId ? companyById(resume.selectedCompanyId) : undefined;
@@ -31,11 +34,47 @@ export function HomeScreen() {
     .filter((company) => company != null)
     .map((company) => ({ id: company.id, name: company.name, lat: company.lat, lng: company.lng }));
 
+  const choices: { key: string; vehicle: Vehicle; label: string }[] = garage.map((car) => ({
+    key: car.id,
+    vehicle: car.vehicle,
+    label: car.vehicle.plate?.trim() ? `${car.vehicle.model} · ${car.vehicle.plate.trim().toUpperCase()}` : car.vehicle.model,
+  }));
+  for (const preset of vehiclePresets) {
+    if (!choices.some((item) => item.vehicle.make === preset.vehicle.make && item.vehicle.model === preset.vehicle.model)) {
+      choices.push({ key: preset.label, vehicle: preset.vehicle, label: preset.vehicle.model });
+    }
+  }
+  const shown = picked ?? garage[0]?.vehicle ?? vehiclePresets[0].vehicle;
+
   return (
     <div className="rise flex flex-1 flex-col">
-      <CarMap car={car} pins={pins} />
+      <CarMap car={{ ...car, color: shown.color, plate: shown.plate }} pins={pins} />
+      <div className="mt-3 flex gap-2 overflow-x-auto" role="radiogroup" aria-label="Car on the map">
+        {choices.map((item) => {
+          const selected = item.vehicle.make === shown.make && item.vehicle.model === shown.model && (item.vehicle.plate ?? "") === (shown.plate ?? "");
+          return (
+            <button
+              key={item.key}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => {
+                setPicked(item.vehicle);
+                const saved = garage.find((car) => car.id === item.key);
+                if (saved) useSavedCar(saved.id);
+              }}
+              className={`press inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 text-sm ${selected ? "bg-fg text-bg" : "bg-surface text-muted"}`}
+            >
+              <span className="size-3 rounded-full border border-line" style={{ background: carColorHex(item.vehicle.color) }} />
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
       <div className="mt-3 flex items-baseline justify-between gap-3">
-        <p className="text-sm text-muted">{car.device ? "Your car" : `${here.road} ${here.mile}, until this phone shares where the car is`}</p>
+        <p className="text-sm text-muted">
+          {shown.make ? carMark(shown) : car.device ? "Your car" : `${here.road} ${here.mile}, until this phone shares where the car is`}
+        </p>
         {!car.device ? (
           <button
             type="button"
@@ -52,7 +91,7 @@ export function HomeScreen() {
           </button>
         ) : null}
       </div>
-      <Btn className="mt-4 w-full" onClick={() => startJob("member")}>
+      <Btn className="mt-4 w-full" onClick={() => startJob("member", undefined, shown)}>
         I need help
       </Btn>
 

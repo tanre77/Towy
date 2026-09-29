@@ -1,9 +1,17 @@
+import { carColorHex } from "@/lib/towy/model";
 import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
 
 type Pin = { id: string; name: string; lat: number; lng: number };
+type Car = { lat: number; lng: number; color?: string; plate?: string };
 
-export function CarMap({ car, pins }: { car: { lat: number; lng: number }; pins: Pin[] }) {
+function pinHtml(car: Car): string {
+  const plate = (car.plate ?? "").replace(/[<>&"]/g, "").trim();
+  const plateHtml = plate ? `<div class="car-plate">${plate}</div>` : "";
+  return `<div class="car-mark"><div class="car-pin" style="background:${carColorHex(car.color)}"></div>${plateHtml}</div>`;
+}
+
+export function CarMap({ car, pins }: { car: Car; pins: Pin[] }) {
   const el = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const carRef = useRef<import("leaflet").Marker | null>(null);
@@ -26,9 +34,9 @@ export function CarMap({ car, pins }: { car: { lat: number; lng: number }; pins:
         maxZoom: 19,
       }).addTo(map);
       carRef.current = L.marker([here.lat, here.lng], {
-        icon: L.divIcon({ className: "", html: `<div class="car-pin"></div>`, iconSize: [16, 26], iconAnchor: [8, 13] }),
+        icon: L.divIcon({ className: "", html: pinHtml(here), iconSize: [72, 44], iconAnchor: [36, 14] }),
         zIndexOffset: 1000,
-        title: "Your car",
+        title: here.plate?.trim() || "Your car",
       }).addTo(map);
       mapRef.current = map;
       const latest = carLive.current;
@@ -54,7 +62,12 @@ export function CarMap({ car, pins }: { car: { lat: number; lng: number }; pins:
     if (!map || !marker) return;
     marker.setLatLng([car.lat, car.lng]);
     map.panTo([car.lat, car.lng], { animate: true });
-  }, [car.lat, car.lng]);
+    void import("leaflet").then((L) => {
+      carRef.current?.setIcon(
+        L.divIcon({ className: "", html: pinHtml(car), iconSize: [72, 44], iconAnchor: [36, 14] }),
+      );
+    });
+  }, [car.lat, car.lng, car.color, car.plate]);
 
   useEffect(() => {
     const map = mapRef.current;

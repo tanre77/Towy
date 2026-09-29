@@ -69,6 +69,17 @@ struct IntakeView: View {
                 field("Make", job.vehicle.make) { value in desk.patchVehicle { $0.make = value } }
                 field("Model", job.vehicle.model) { value in desk.patchVehicle { $0.model = value } }
             }
+            FieldLabel(title: "License plate")
+            UnderlineField(text: Binding(
+                get: { job.vehicle.plate },
+                set: { value in desk.patchVehicle { $0.plate = value.uppercased() } }
+            ))
+            Text("Color").font(.subheadline.weight(.medium)).foregroundStyle(TowyColor.muted)
+            FlowChoices(items: ["White", "Silver", "Black", "Red", "Blue", "Green"]) { label in
+                ChoiceRow(title: label, selected: job.vehicle.color == label.lowercased()) {
+                    desk.patchVehicle { $0.color = label.lowercased() }
+                }
+            }
             FieldLabel(title: "Tire size")
             UnderlineField(text: Binding(
                 get: { job.vehicle.tires },

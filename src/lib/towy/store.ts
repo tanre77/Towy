@@ -40,7 +40,7 @@ type State = Persisted & {
   hydrate: () => void;
   setView: (view: View) => void;
   back: () => void;
-  startJob: (source?: Job["source"], lockedCoverage?: Coverage) => void;
+  startJob: (source?: Job["source"], lockedCoverage?: Coverage, vehicle?: Vehicle) => void;
   patchContact: (patch: { contactName?: string; contactPhone?: string }) => void;
   patchVehicle: (patch: Partial<Vehicle>) => void;
   setPreset: (vehicle: Vehicle) => void;
@@ -154,6 +154,11 @@ function normalizeJob(job: Job): Job {
   return {
     ...job,
     help: job.help ?? "tow",
+    vehicle: {
+      ...job.vehicle,
+      color: job.vehicle?.color ?? "",
+      plate: job.vehicle?.plate ?? "",
+    },
     origin: job.origin ?? null,
     drop: job.drop ?? null,
     situation: {
@@ -225,18 +230,29 @@ export const useTowy = create<State>((set, get) => ({
       set({ view: view === "quotes" ? "intake" : "home", step: view === "quotes" ? 4 : 0 });
     }
   },
-  startJob: (source = "member", lockedCoverage) => {
+  startJob: (source = "member", lockedCoverage, vehicle) => {
     const job = blankJob(source);
     if (lockedCoverage) {
       job.coverage = lockedCoverage;
       job.coverageLocked = true;
       job.contactName = "Harbor member";
     }
-    const saved = source === "member" && !lockedCoverage ? get().garage[0] : undefined;
+    const garage = source === "member" && !lockedCoverage ? get().garage : [];
+    const saved = vehicle
+      ? garage.find(
+          (car) =>
+            car.vehicle.make === vehicle.make &&
+            car.vehicle.model === vehicle.model &&
+            (car.vehicle.plate ?? "") === (vehicle.plate ?? ""),
+        ) ?? garage[0]
+      : garage[0];
     if (saved) {
       job.contactName = saved.contactName;
       job.contactPhone = saved.contactPhone;
       job.vehicle = { ...saved.vehicle };
+    }
+    if (vehicle && (!saved || saved.vehicle.model !== vehicle.model)) {
+      job.vehicle = { ...job.vehicle, ...vehicle, color: vehicle.color ?? "", plate: vehicle.plate ?? "" };
     }
     set({
       jobs: [...get().jobs.filter((item) => item.id !== job.id), job],
@@ -260,7 +276,7 @@ export const useTowy = create<State>((set, get) => ({
       withActive(get(), (job) =>
         recomputeSituation({
           ...job,
-          vehicle,
+          vehicle: { ...vehicle, color: job.vehicle.color ?? "", plate: job.vehicle.plate ?? "" },
           situation: { ...job.situation, equipmentTouched: false },
         }),
       ),
@@ -431,7 +447,7 @@ export const useTowy = create<State>((set, get) => ({
   rememberCar: () => {
     const job = get().jobs.find((item) => item.id === get().activeId);
     if (!job || !vehicleOk(job.vehicle) || !job.contactName.trim() || !phoneOk(job.contactPhone)) return;
-    const id = [job.vehicle.year, job.vehicle.make, job.vehicle.model, job.vehicle.drivetrain]
+    const id = [job.vehicle.year, job.vehicle.make, job.vehicle.model, job.vehicle.drivetrain, job.vehicle.color ?? "", job.vehicle.plate ?? ""]
       .join("-")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-");
