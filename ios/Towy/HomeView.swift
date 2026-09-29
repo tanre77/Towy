@@ -64,7 +64,7 @@ struct HomeView: View {
 
                 VStack(spacing: 0) {
                     link("Insurer plugin", "$420/mo") { desk.setScreen(.insurer) }
-                    link("Yard board", "5 yards") { desk.setScreen(.partner) }
+                    link("Shop board", "5 shops") { desk.setScreen(.partner) }
                 }
                 .padding(.top, resume == nil ? 24 : 0)
 

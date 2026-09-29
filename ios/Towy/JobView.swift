@@ -26,7 +26,7 @@ struct JobView: View {
                 Text("\(location.road) mile \(location.mile) · \(location.place)")
                     .font(.subheadline)
                     .foregroundStyle(TowyColor.muted)
-                Text(company?.name ?? "Yard confirmed")
+                Text(company?.name ?? "Shop confirmed")
                     .font(.title2.weight(.medium))
                     .padding(.top, 8)
                 Text(calling ? "…" : liveEta == 0 ? "Here" : "\(liveEta)")
@@ -36,7 +36,7 @@ struct JobView: View {
                 if !calling && liveEta != 0 {
                     Text("minutes").font(.subheadline).foregroundStyle(TowyColor.muted)
                 }
-                Text(calling ? "Calling \(company?.name ?? "the yard") for a live update." : (job.live?.note ?? "Truck is rolling."))
+                Text(calling ? "Calling \(company?.name ?? "the shop") for a live update." : (job.live?.note ?? "Truck is rolling."))
                     .font(.subheadline)
                     .foregroundStyle(TowyColor.muted)
                     .padding(.top, 8)
@@ -71,7 +71,7 @@ struct JobView: View {
                 }
 
                 if job.status != .done && job.status != .arrived {
-                    PrimaryButton(title: job.status == .checked ? "Call the yard again" : "Halfway check-in call", disabled: calling) {
+                    PrimaryButton(title: job.status == .checked ? "Call the shop again" : "Halfway check-in call", disabled: calling) {
                         calling = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                             desk.halfway()
@@ -89,10 +89,10 @@ struct JobView: View {
                         .padding(.top, 20)
                 }
                 if job.status == .done {
-                    Text("How was \(company?.name ?? "the yard")?")
+                    Text("How was \(company?.name ?? "the shop")?")
                         .font(.body.weight(.medium))
                         .padding(.top, 28)
-                    Text("Stays on the yard that showed up.")
+                    Text("Stays on the shop that showed up.")
                         .font(.subheadline)
                         .foregroundStyle(TowyColor.muted)
                     HStack(spacing: 4) {
@@ -117,7 +117,7 @@ struct JobView: View {
                     }
                     .padding(.top, 12)
                     if job.review != nil {
-                        Text("Saved on \(company?.name ?? "the yard").")
+                        Text("Saved on \(company?.name ?? "the shop").")
                             .font(.subheadline)
                             .foregroundStyle(Color(red: 143 / 255, green: 175 / 255, blue: 150 / 255))
                             .padding(.top, 8)

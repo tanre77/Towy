@@ -55,8 +55,8 @@ export function HomeScreen() {
           <span className="text-sm tabular-nums text-muted">{usd(pilotMonth().total)}</span>
         </button>
         <button type="button" onClick={() => setView("operator")} className="press flex w-full items-baseline justify-between border-b border-line py-4 text-left">
-          <span>Yard board</span>
-          <span className="text-sm text-muted">5 yards</span>
+          <span>Shop board</span>
+          <span className="text-sm text-muted">5 shops</span>
         </button>
       </div>
 

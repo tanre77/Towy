@@ -77,7 +77,7 @@ export function Split({ quote }: { quote: Quote }) {
   ];
   if (quote.dispatchFee > 0) rows.push(["Carrier pays Shoulder", usd(quote.dispatchFee), true]);
   if (quote.towyFee > 0) rows.push(["Shoulder 6%", usd(quote.towyFee), true]);
-  rows.push(["Yard", usd(quote.operatorReceives), false]);
+  rows.push(["Shop", usd(quote.operatorReceives), false]);
   return (
     <dl>
       {rows.map(([label, value, strong]) => (

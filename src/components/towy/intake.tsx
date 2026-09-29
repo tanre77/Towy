@@ -138,7 +138,7 @@ export function IntakeScreen() {
             <Field label="Name">
               <TextInput value={job.contactName} onChange={(e) => patchContact({ contactName: e.target.value })} placeholder="Alex Chen" autoComplete="name" />
             </Field>
-            <Field label="Phone for the yard">
+            <Field label="Phone for the shop">
               <TextInput
                 value={job.contactPhone}
                 onChange={(e) => patchContact({ contactPhone: e.target.value })}
@@ -439,10 +439,10 @@ export function IntakeScreen() {
           </Btn>
         ) : (
           <Btn className="w-full" disabled={!ready || oilOnEv} onClick={placeCalls}>
-            Call the yards
+            Call the shops
           </Btn>
         )}
-        {step === 1 && !ready ? <p className="mt-3 text-sm text-subtle">Add a name and a 10-digit phone so the yard can call back.</p> : null}
+        {step === 1 && !ready ? <p className="mt-3 text-sm text-subtle">Add a name and a 10-digit phone so the shop can call back.</p> : null}
       </div>
     </div>
   );

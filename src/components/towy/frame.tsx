@@ -32,7 +32,7 @@ export function Frame({ children }: { children: ReactNode }) {
               ? "Stop"
               : view === "insurer"
                 ? "Insurers"
-                : "Yards";
+                : "Shops";
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-6xl lg:gap-16 lg:px-8">

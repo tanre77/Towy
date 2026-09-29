@@ -197,9 +197,9 @@ export type Company = {
 
 export const coverageOptions: { id: Coverage; title: string; detail: string }[] = [
   { id: "none", title: "No coverage", detail: "Member pays the bill. Shoulder takes 6% of that. No carrier is invoiced." },
-  { id: "roadside", title: "Roadside assist", detail: "Policy pays the first $125. The carrier pays Shoulder $18. The yard is paid in full." },
+  { id: "roadside", title: "Roadside assist", detail: "Policy pays the first $125. The carrier pays Shoulder $18. The shop is paid in full." },
   { id: "deductible", title: "$100 deductible", detail: "Member pays the first $100. The carrier pays Shoulder $18. The rest is untouched." },
-  { id: "full", title: "Tow fully covered", detail: "Insurance pays the yard in full. The carrier still pays Shoulder $18." },
+  { id: "full", title: "Tow fully covered", detail: "Insurance pays the shop in full. The carrier still pays Shoulder $18." },
 ];
 
 export const locations: Location[] = [
@@ -670,7 +670,7 @@ export function halfwayUpdate(job: Job): { etaMin: number; total: number; note: 
     ? "Officer is on the shoulder. Lane is moving. Price held."
     : slip
       ? "Heavy traffic added a few minutes. Price held."
-      : "Clear run from the yard. Price held.";
+      : "Clear run from the shop. Price held.";
   return { etaMin, total, note };
 }
 
@@ -769,7 +769,7 @@ function seedJob(partial: Pick<Job, "id" | "contactName" | "vehicle" | "situatio
   return {
     ...base,
     calls,
-    live: selected ? { etaMin: selected.etaMin, total: selected.total, note: "Yard accepted. Truck is rolling." } : null,
+    live: selected ? { etaMin: selected.etaMin, total: selected.total, note: "Shop accepted. Truck is rolling." } : null,
   };
 }
 

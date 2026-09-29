@@ -341,7 +341,7 @@ enum TowyMath {
         } else if slip > 0 {
             note = "Heavy traffic added a few minutes. Price held."
         } else {
-            note = "Clear run from the yard. Price held."
+            note = "Clear run from the shop. Price held."
         }
         return LiveUpdate(etaMin: eta, total: total, note: note)
     }
@@ -420,7 +420,7 @@ enum TowyMath {
         case .none: "Member pays the whole tow. Towy's 6% applies to all of it."
         case .roadside: "Policy pays the first $125. Towy's cut skips that part."
         case .deductible: "Member pays the first $100. Insurance pays the rest, untouched."
-        case .full: "Insurance pays the yard in full. Towy's coordination fee is $0."
+        case .full: "Insurance pays the shop in full. Towy's coordination fee is $0."
         }
     }
 }

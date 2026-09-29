@@ -38,7 +38,7 @@ export function QuotesScreen() {
         {needsShop(job) ? (
           <>
             {equipmentLabel(job.situation.equipment)}
-            {job.situation.winch ? ", winch" : ""}. Nearest yard that can take it.
+            {job.situation.winch ? ", winch" : ""}. Nearest shop that can take it.
           </>
         ) : atCurb(job.help) ? (
           <>{workLabel(job)}. Where the car is parked. No shop.</>
@@ -104,13 +104,13 @@ export function QuotesScreen() {
           <LineItems quote={selected.quote} />
         </div>
       ) : (
-        <p className="mt-6 text-sm text-muted">No yard could take this stop. Change the equipment or the mile marker.</p>
+        <p className="mt-6 text-sm text-muted">No shop could take this stop. Change the equipment or the mile marker.</p>
       )}
       {selected?.quote && share === 0 ? (
         <div className="mt-6">
           <p className="text-sm text-muted">Insurance covers the service. Nothing to charge.</p>
           <Btn className="mt-3 w-full" onClick={confirmFree}>
-            Confirm this yard
+            Confirm this shop
           </Btn>
         </div>
       ) : null}

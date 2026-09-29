@@ -5,7 +5,7 @@ import { useTowy } from "@/lib/towy/store";
 const statusLabel: Record<Job["status"], string> = {
   draft: "Intake",
   calling: "Calling",
-  quoted: "Waiting on a yard",
+  quoted: "Waiting on a shop",
   enroute: "Rolling",
   checked: "Checked in",
   arrived: "On scene",
@@ -42,7 +42,7 @@ export function OperatorScreen() {
         ))}
       </div>
       <div className="mt-6">
-        {visible.length === 0 ? <p className="text-sm text-muted">Nothing on this yard yet. Run a member stop, or switch yards.</p> : null}
+        {visible.length === 0 ? <p className="text-sm text-muted">Nothing on this shop yet. Run a member stop, or switch shops.</p> : null}
         {visible.map((job) => {
           const location = locationById(job.locationId);
           const quote = job.calls.find((call) => call.companyId === yardId)?.quote;
@@ -75,10 +75,10 @@ export function OperatorScreen() {
                 <p className="mt-3 text-sm text-muted">Taken by {takenBy.name}.</p>
               ) : quote ? (
                 <p className="mt-3 text-sm tabular-nums">
-                  {quote.etaMin} min · {usd(quote.total)} quote · yard keeps {usd(quote.operatorReceives)}
+                  {quote.etaMin} min · {usd(quote.total)} quote · shop keeps {usd(quote.operatorReceives)}
                 </p>
               ) : (
-                <p className="mt-3 text-sm text-muted">This yard declined the stop.</p>
+                <p className="mt-3 text-sm text-muted">This shop declined the stop.</p>
               )}
               <div className="mt-4 flex flex-col gap-2">
                 {open && quote ? (

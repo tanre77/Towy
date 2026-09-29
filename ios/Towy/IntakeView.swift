@@ -29,12 +29,12 @@ struct IntakeView: View {
                         desk.setStep(desk.step + 1)
                     }
                 } else {
-                    PrimaryButton(title: "Call the yards", disabled: !ready) {
+                    PrimaryButton(title: "Call the shops", disabled: !ready) {
                         desk.placeCalls()
                     }
                 }
                 if desk.step == 0 && !ready {
-                    Text("Add a name and a 10-digit phone so the yard can call back.")
+                    Text("Add a name and a 10-digit phone so the shop can call back.")
                         .font(.subheadline)
                         .foregroundStyle(TowyColor.subtle)
                 }
@@ -51,7 +51,7 @@ struct IntakeView: View {
                 get: { job.contactName },
                 set: { desk.patchContact(name: $0) }
             ))
-            FieldLabel(title: "Phone for the yard")
+            FieldLabel(title: "Phone for the shop")
             UnderlineField(text: Binding(
                 get: { job.contactPhone },
                 set: { desk.patchContact(phone: $0) }

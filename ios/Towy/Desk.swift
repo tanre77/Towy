@@ -131,7 +131,7 @@ final class Desk: ObservableObject {
             job.selectedCompanyId = companyId
             job.status = .enroute
             job.payment = payment
-            job.live = LiveUpdate(etaMin: quote.etaMin, total: quote.total, note: "Yard accepted. Truck is rolling.")
+            job.live = LiveUpdate(etaMin: quote.etaMin, total: quote.total, note: "Shop accepted. Truck is rolling.")
         }
         screen = .job
         persist()
@@ -181,7 +181,7 @@ final class Desk: ObservableObject {
               let quote = jobs[index].calls.first(where: { $0.companyId == yardId })?.quote else { return }
         jobs[index].selectedCompanyId = yardId
         jobs[index].status = .enroute
-        jobs[index].live = LiveUpdate(etaMin: quote.etaMin, total: quote.total, note: "Accepted from the yard board.")
+        jobs[index].live = LiveUpdate(etaMin: quote.etaMin, total: quote.total, note: "Accepted from the shop board.")
         persist()
     }
 
@@ -256,7 +256,7 @@ final class Desk: ObservableObject {
             job = TowyMath.recompute(job)
             job.calls = TowyMath.buildCalls(job)
             if let company, let quote = job.calls.first(where: { $0.companyId == company })?.quote {
-                job.live = LiveUpdate(etaMin: quote.etaMin, total: quote.total, note: "Yard accepted. Truck is rolling.")
+                job.live = LiveUpdate(etaMin: quote.etaMin, total: quote.total, note: "Shop accepted. Truck is rolling.")
             }
             return job
         }

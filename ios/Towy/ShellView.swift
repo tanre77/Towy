@@ -11,7 +11,7 @@ struct ShellView: View {
         case .quotes: "Estimates"
         case .job: "Stop"
         case .insurer: "Insurers"
-        case .partner: "Yards"
+        case .partner: "Shops"
         }
     }
 

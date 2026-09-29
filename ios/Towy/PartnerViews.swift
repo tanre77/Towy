@@ -11,7 +11,7 @@ struct InsurerView: View {
 
     private let plans = [
         ("Insurer plugin", "$420/mo", "Per brand app."),
-        ("Yard console", "$69/mo", "Per company."),
+        ("Shop board", "$69/mo", "Per company."),
         ("Coordination", "6%", "Only on what the member still owes."),
     ]
 
@@ -69,7 +69,7 @@ struct OperatorView: View {
         let yard = TowyMath.company(desk.yardId)
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text(yard?.name ?? "Yard").font(.title2.weight(.medium))
+                Text(yard?.name ?? "Shop").font(.title2.weight(.medium))
                 Text(yard?.yard ?? "").font(.subheadline).foregroundStyle(TowyColor.muted).padding(.top, 4)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
@@ -83,7 +83,7 @@ struct OperatorView: View {
                 }
                 .padding(.top, 16)
                 if visible.isEmpty {
-                    Text("Nothing on this yard yet. Run a member stop, or switch yards.")
+                    Text("Nothing on this shop yet. Run a member stop, or switch shops.")
                         .font(.subheadline)
                         .foregroundStyle(TowyColor.muted)
                         .padding(.top, 24)
@@ -127,11 +127,11 @@ struct OperatorView: View {
             if let takenBy {
                 Text("Taken by \(takenBy.name).").font(.subheadline).foregroundStyle(TowyColor.muted)
             } else if let quote {
-                Text("\(quote.etaMin) min · \(TowyMath.usd(quote.total)) quote · yard keeps \(TowyMath.usd(quote.operatorReceives))")
+                Text("\(quote.etaMin) min · \(TowyMath.usd(quote.total)) quote · shop keeps \(TowyMath.usd(quote.operatorReceives))")
                     .font(.subheadline)
                     .monospacedDigit()
             } else {
-                Text("This yard declined the stop.").font(.subheadline).foregroundStyle(TowyColor.muted)
+                Text("This shop declined the stop.").font(.subheadline).foregroundStyle(TowyColor.muted)
             }
             if open, quote != nil {
                 PrimaryButton(title: "Accept and roll") {
@@ -161,7 +161,7 @@ struct OperatorView: View {
         switch status {
         case .draft: "Intake"
         case .calling: "Calling"
-        case .quoted: "Waiting on a yard"
+        case .quoted: "Waiting on a shop"
         case .enroute: "Rolling"
         case .checked: "Checked in"
         case .arrived: "On scene"

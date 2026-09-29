@@ -20,13 +20,13 @@ struct QuotesView: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Estimates").font(.title2.weight(.medium))
                 if let job {
-                    Text("\(TowyMath.equipmentLabel(job.situation.equipment))\(job.situation.winch ? ", winch" : ""). Nearest yard that can take it.")
+                    Text("\(TowyMath.equipmentLabel(job.situation.equipment))\(job.situation.winch ? ", winch" : ""). Nearest shop that can take it.")
                         .font(.subheadline)
                         .foregroundStyle(TowyColor.muted)
                         .padding(.top, 8)
                 }
                 ForEach(declines) { call in
-                    Text("\(TowyMath.company(call.companyId)?.name ?? "Yard") declined. \(call.decline ?? "")")
+                    Text("\(TowyMath.company(call.companyId)?.name ?? "Shop") declined. \(call.decline ?? "")")
                         .font(.subheadline)
                         .foregroundStyle(TowyColor.muted)
                         .padding(.top, 8)
@@ -70,7 +70,7 @@ struct QuotesView: View {
                             .font(.subheadline)
                             .foregroundStyle(TowyColor.muted)
                             .padding(.top, 20)
-                        PrimaryButton(title: "Confirm this yard") {
+                        PrimaryButton(title: "Confirm this shop") {
                             if let id = selected?.companyId { desk.confirm(companyId: id, payment: nil) }
                         }
                         .padding(.top, 12)
@@ -113,7 +113,7 @@ struct QuotesView: View {
                         .padding(.top, 16)
                     }
                 } else if job != nil {
-                    Text("No yard could take this stop. Change the equipment or the mile marker.")
+                    Text("No shop could take this stop. Change the equipment or the mile marker.")
                         .font(.subheadline)
                         .foregroundStyle(TowyColor.muted)
                         .padding(.top, 16)

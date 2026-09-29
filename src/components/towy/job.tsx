@@ -49,11 +49,11 @@ export function JobScreen() {
         {location.road} mile {location.mile} · {location.place}
         {drop ? ` · ${drop.shop.name}` : ""}
       </p>
-      <h1 className="mt-2 text-2xl font-medium tracking-tight">{company?.name ?? "Yard confirmed"}</h1>
+      <h1 className="mt-2 text-2xl font-medium tracking-tight">{company?.name ?? "Shop confirmed"}</h1>
       <p className="mt-4 font-display text-6xl leading-none tabular-nums">{calling ? "…" : liveEta === 0 ? "Here" : liveEta}</p>
       <p className="mt-1 text-sm text-muted">{calling || liveEta === 0 ? "" : "minutes"}</p>
       <p className="mt-2 text-sm text-muted" aria-live="polite">
-        {calling ? `Calling ${company?.name ?? "the yard"} for a live update.` : (job.live?.note ?? "Truck is rolling.")}
+        {calling ? `Calling ${company?.name ?? "the shop"} for a live update.` : (job.live?.note ?? "Truck is rolling.")}
       </p>
       {quote ? <p className="mt-2 text-sm tabular-nums text-muted">Quote held at {usd(job.live?.total ?? quote.total)}</p> : null}
       {job.payment?.method === "apple-pay" ? (
@@ -78,7 +78,7 @@ export function JobScreen() {
       <div className="mt-6 space-y-2">
         {job.status !== "done" && job.status !== "arrived" ? (
           <Btn className="w-full" disabled={calling} onClick={checkIn}>
-            {job.status === "checked" ? "Call the yard again" : "Halfway check-in call"}
+            {job.status === "checked" ? "Call the shop again" : "Halfway check-in call"}
           </Btn>
         ) : null}
         {job.status === "checked" ? (
@@ -102,8 +102,8 @@ export function JobScreen() {
             saveReview(stars, text);
           }}
         >
-          <p className="font-medium">How was {company?.name ?? "the yard"}?</p>
-          <p className="mt-1 text-sm text-muted">Stays on the yard that showed up.</p>
+          <p className="font-medium">How was {company?.name ?? "the shop"}?</p>
+          <p className="mt-1 text-sm text-muted">Stays on the shop that showed up.</p>
           <div className="mt-3 flex gap-1">
             {Array.from({ length: 5 }, (_, i) => (
               <button key={i} type="button" aria-label={`${i + 1} stars`} onClick={() => setStars(i + 1)} className="press grid size-11 place-items-center">

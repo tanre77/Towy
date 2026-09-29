@@ -328,7 +328,7 @@ export const useTowy = create<State>((set, get) => ({
           selectedCompanyId: companyId,
           status: "enroute",
           payment: payment ?? null,
-          live: { etaMin: quote.etaMin, total: quote.total, note: "Yard accepted. Truck is rolling." },
+          live: { etaMin: quote.etaMin, total: quote.total, note: "Shop accepted. Truck is rolling." },
         };
       }),
     );
@@ -394,7 +394,7 @@ export const useTowy = create<State>((set, get) => ({
           ...job,
           selectedCompanyId: yardId,
           status: "enroute",
-          live: { etaMin: quote.etaMin, total: quote.total, note: "Accepted from the yard board." },
+          live: { etaMin: quote.etaMin, total: quote.total, note: "Accepted from the shop board." },
         };
       }),
     });

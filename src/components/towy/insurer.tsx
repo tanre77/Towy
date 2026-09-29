@@ -19,8 +19,8 @@ export function InsurerScreen() {
       <p className="mt-3 text-sm text-muted">A month, if they send {book.stops} stops. Put this in front of Grange.</p>
 
       <div className="mt-8">
-        <Row k="Desk" v={usd(book.desk)} note="The book stays on. Yards pay nothing to be on it." />
-        <Row k="Each stop" v={usd(DISPATCH_FEE)} note="Invoiced to the carrier. Not on the member's bill. Not taken from the yard." />
+        <Row k="Desk" v={usd(book.desk)} note="The book stays on. Shops pay nothing to be on it." />
+        <Row k="Each stop" v={usd(DISPATCH_FEE)} note="Invoiced to the carrier. Not on the member's bill. Not taken from the shop." />
         <Row k="Stops" v={String(book.stops)} note="Eight a night, thirty nights. A slice of one city, not the whole state." />
         <Row k="Stop fees" v={usd(book.dispatch)} note="A covered tow still pays. That is the point." />
       </div>

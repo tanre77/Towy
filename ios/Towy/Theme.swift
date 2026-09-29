@@ -126,7 +126,7 @@ struct SplitList: View {
             row("Insurance", TowyMath.usd(quote.covered), strong: false)
             row("Your share", TowyMath.usd(quote.driverPays), strong: true)
             row("Towy 6%", TowyMath.usd(quote.towyFee), strong: true)
-            row("Yard", TowyMath.usd(quote.operatorReceives), strong: false)
+            row("Shop", TowyMath.usd(quote.operatorReceives), strong: false)
         }
     }
 

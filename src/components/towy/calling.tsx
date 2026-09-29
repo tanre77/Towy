@@ -41,7 +41,7 @@ export function CallingScreen() {
   if (calls.length === 0 || done || !current || !company) {
     return (
       <div className="flex flex-1 flex-col justify-center">
-        <p className="text-muted">{calls.length === 0 ? "No yards in range for this stop." : "Writing the estimates."}</p>
+        <p className="text-muted">{calls.length === 0 ? "No shops in range for this stop." : "Writing the estimates."}</p>
         <Btn className="mt-4" variant="line" onClick={() => (calls.length === 0 ? useTowy.setState({ view: "intake", step: 3 }) : finish(job.id))}>
           {calls.length === 0 ? "Back to the stop" : "See estimates"}
         </Btn>
