@@ -1,5 +1,5 @@
 import { Btn } from "@/components/towy/bits";
-import { companyById, locations, trafficLabel } from "@/lib/towy/model";
+import { companyById, locations, pilotMonth, trafficLabel, usd } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
 export function HomeScreen() {
@@ -51,8 +51,8 @@ export function HomeScreen() {
 
       <div className={resume ? "" : "mt-6"}>
         <button type="button" onClick={() => setView("insurer")} className="press flex w-full items-baseline justify-between border-b border-line py-4 text-left">
-          <span>Insurer plugin</span>
-          <span className="text-sm text-muted">$420/mo</span>
+          <span>Carrier book</span>
+          <span className="text-sm tabular-nums text-muted">{usd(pilotMonth().total)}</span>
         </button>
         <button type="button" onClick={() => setView("operator")} className="press flex w-full items-baseline justify-between border-b border-line py-4 text-left">
           <span>Yard board</span>

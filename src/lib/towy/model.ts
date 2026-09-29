@@ -2,6 +2,10 @@ export const TOWY_RATE = 0.06;
 export const ROADSIDE_CAP = 125;
 export const DEDUCTIBLE = 100;
 export const AFTER_HOURS_FEE = 40;
+export const DESK_FEE = 4000;
+export const DISPATCH_FEE = 18;
+export const PILOT_STOPS_A_NIGHT = 8;
+export const PILOT_NIGHTS = 30;
 
 export const SCENARIO = {
   when: "Monday night",
@@ -59,6 +63,7 @@ export type Quote = {
   covered: number;
   driverPays: number;
   towyFee: number;
+  dispatchFee: number;
   operatorReceives: number;
   note: string;
   work: string;
@@ -191,10 +196,10 @@ export type Company = {
 };
 
 export const coverageOptions: { id: Coverage; title: string; detail: string }[] = [
-  { id: "none", title: "No coverage", detail: "Member pays the whole tow. Towy's 6% applies to all of it." },
-  { id: "roadside", title: "Roadside assist", detail: "Policy pays the first $125. Towy's cut skips that part." },
-  { id: "deductible", title: "$100 deductible", detail: "Member pays the first $100. Insurance pays the rest, untouched." },
-  { id: "full", title: "Tow fully covered", detail: "Insurance pays the yard in full. Towy's coordination fee is $0." },
+  { id: "none", title: "No coverage", detail: "Member pays the bill. Shoulder takes 6% of that. No carrier is invoiced." },
+  { id: "roadside", title: "Roadside assist", detail: "Policy pays the first $125. The carrier pays Shoulder $18. The yard is paid in full." },
+  { id: "deductible", title: "$100 deductible", detail: "Member pays the first $100. The carrier pays Shoulder $18. The rest is untouched." },
+  { id: "full", title: "Tow fully covered", detail: "Insurance pays the yard in full. The carrier still pays Shoulder $18." },
 ];
 
 export const locations: Location[] = [
@@ -495,18 +500,27 @@ export function policeReason(position: Position, side: Side, traffic: Traffic): 
   return `Traffic is ${load} and you are out of the lane. An officer is optional.`;
 }
 
-export function splitBill(total: number, coverage: Coverage) {
+export function splitBill(total: number, coverage: Coverage, source: Job["source"] = "member") {
   const covered =
     coverage === "full" ? total : coverage === "roadside" ? Math.min(ROADSIDE_CAP, total) : coverage === "deductible" ? Math.max(0, total - DEDUCTIBLE) : 0;
   const driverPays = round2(Math.max(0, total - covered));
-  const towyFee = round2(driverPays * TOWY_RATE);
+  const carrierJob = source === "insurer" || source === "seed";
+  const towyFee = carrierJob ? 0 : round2(driverPays * TOWY_RATE);
+  const dispatchFee = carrierJob ? DISPATCH_FEE : 0;
   const operatorReceives = round2(total - towyFee);
   return {
     covered: round2(covered),
     driverPays,
     towyFee,
+    dispatchFee,
     operatorReceives,
   };
+}
+
+export function pilotMonth() {
+  const stops = PILOT_STOPS_A_NIGHT * PILOT_NIGHTS;
+  const dispatch = stops * DISPATCH_FEE;
+  return { stops, dispatch, desk: DESK_FEE, total: dispatch + DESK_FEE };
 }
 
 export function recomputeSituation(job: Job): Job {
@@ -551,7 +565,7 @@ function quoteFor(company: Company, job: Job): Quote {
   const dropMiles = drop?.miles ?? 0;
   const dropFee = drop ? round2(dropMiles * company.perMile) : 0;
   const total = round2(hook + mileage + equipmentFee + winchFee + afterHours + policeWait + dropFee);
-  const money = splitBill(total, job.coverage);
+  const money = splitBill(total, job.coverage, job.source);
   const trafficAdd = location.traffic === "heavy" ? 8 : location.traffic === "moderate" ? 4 : 1;
   const etaMin = Math.max(12, Math.min(75, Math.round(8 + miles * 1.65 + company.bias + trafficAdd + (flatbed ? company.flatbedEta : 0) + (SCENARIO.afterHours ? 3 : 0))));
   const notes: string[] = [];

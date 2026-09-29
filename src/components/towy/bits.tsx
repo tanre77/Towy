@@ -73,10 +73,11 @@ export function Split({ quote }: { quote: Quote }) {
   const rows: [string, string, boolean][] = [
     [quote.work === "Tow" ? "Tow" : quote.work, usd(quote.total), false],
     ["Insurance", usd(quote.covered), false],
-    ["Member", usd(quote.driverPays), true],
-    ["Shoulder 6%", usd(quote.towyFee), true],
-    ["Yard", usd(quote.operatorReceives), false],
+    ["Member", usd(quote.driverPays), false],
   ];
+  if (quote.dispatchFee > 0) rows.push(["Carrier pays Shoulder", usd(quote.dispatchFee), true]);
+  if (quote.towyFee > 0) rows.push(["Shoulder 6%", usd(quote.towyFee), true]);
+  rows.push(["Yard", usd(quote.operatorReceives), false]);
   return (
     <dl>
       {rows.map(([label, value, strong]) => (
