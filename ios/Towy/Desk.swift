@@ -203,7 +203,9 @@ final class Desk: ObservableObject {
 
     private func mutate(_ body: (inout Job) -> Void) {
         guard let id = activeId, let index = jobs.firstIndex(where: { $0.id == id }) else { return }
-        body(&jobs[index])
+        var next = jobs
+        body(&next[index])
+        jobs = next
         persist()
     }
 

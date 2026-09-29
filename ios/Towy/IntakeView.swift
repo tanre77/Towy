@@ -75,11 +75,16 @@ struct IntakeView: View {
                 set: { value in desk.patchVehicle { $0.tires = value } }
             ))
             Text("Drivetrain").font(.subheadline.weight(.medium)).foregroundStyle(TowyColor.muted)
-            ForEach(Drivetrain.allCases, id: \.self) { drive in
-                ChoiceRow(title: drive.rawValue, selected: job.vehicle.drivetrain == drive) {
-                    desk.patchVehicle { $0.drivetrain = drive }
+            Picker("Drivetrain", selection: Binding(
+                get: { job.vehicle.drivetrain },
+                set: { value in desk.patchVehicle { $0.drivetrain = value } }
+            )) {
+                ForEach(Drivetrain.allCases, id: \.self) { drive in
+                    Text(drive.rawValue).tag(drive)
                 }
             }
+            .pickerStyle(.segmented)
+            .labelsHidden()
             ChoiceRow(title: "Electric vehicle", selected: job.vehicle.ev) {
                 desk.patchVehicle { $0.ev.toggle() }
             }

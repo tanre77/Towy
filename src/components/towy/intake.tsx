@@ -95,12 +95,22 @@ export function IntakeScreen() {
             </Field>
             <div>
               <p className="mb-2 text-sm font-medium text-muted">Drivetrain</p>
-              <div className="grid grid-cols-4 gap-2">
-                {drives.map((drive) => (
-                  <Choice key={drive} selected={job.vehicle.drivetrain === drive} onClick={() => patchVehicle({ drivetrain: drive })} className="justify-center px-1">
-                    {drive}
-                  </Choice>
-                ))}
+              <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Drivetrain">
+                {drives.map((drive) => {
+                  const on = job.vehicle.drivetrain === drive;
+                  return (
+                    <button
+                      key={drive}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => patchVehicle({ drivetrain: drive })}
+                      className={`press min-h-11 min-w-0 rounded-md px-1 text-sm font-medium ${on ? "bg-fg text-bg" : "bg-surface text-muted"}`}
+                    >
+                      {drive}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <Choice selected={job.vehicle.ev} onClick={() => patchVehicle({ ev: !job.vehicle.ev })}>
