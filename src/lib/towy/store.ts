@@ -140,7 +140,7 @@ function deskFrom(stored: {
     if (!seen.has(seed.id)) jobs.unshift(seed);
   }
   const reviews = (stored.reviews ?? []).filter((review): review is Review => Boolean(review && typeof review === "object" && typeof (review as Review).id === "string"));
-  const views: View[] = ["home", "intake", "calling", "quotes", "job", "insurer", "operator", "promote", "profile"];
+  const views: View[] = ["home", "intake", "calling", "quotes", "job", "insurer", "operator", "promote", "profile", "refer"];
   const view = views.includes(stored.view as View) ? (stored.view as View) : "home";
   const plans = new Set(["pin", "first", "both"]);
   const promotions = (stored.promotions ?? []).filter((item): item is Promotion => {

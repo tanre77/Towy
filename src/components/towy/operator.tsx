@@ -21,7 +21,6 @@ export function OperatorScreen() {
   const runHalfway = useTowy((s) => s.runHalfway);
   const markArrived = useTowy((s) => s.markArrived);
   const markDone = useTowy((s) => s.markDone);
-  const setView = useTowy((s) => s.setView);
   const yard = companyById(yardId);
 
   const visible = jobs.filter((job) => job.status !== "draft" && job.status !== "calling" && job.calls.some((call) => call.companyId === yardId));
@@ -48,11 +47,7 @@ export function OperatorScreen() {
       </div>
       <div className="stagger mt-6">
         {visible.length === 0 ? (
-          <EmptyState title="Nothing on this board" body={`${yard?.name ?? "This shop"} has no stops yet. Run one from the map, or switch shops.`}>
-            <Btn variant="line" onClick={() => setView("home")}>
-              Back to the map
-            </Btn>
-          </EmptyState>
+          <EmptyState title="Nothing on this board" body={`${yard?.name ?? "This shop"} has no stops yet. Switch shops.`} />
         ) : null}
         {visible.map((job) => {
           const location = locationById(job.locationId);
@@ -139,9 +134,6 @@ export function OperatorScreen() {
         })}
       </div>
       <ReferLink />
-      <button type="button" onClick={() => setView("insurer")} className="press mt-6 inline-flex min-h-11 items-center self-start text-sm text-muted">
-        See insurer pricing
-      </button>
     </div>
   );
 }
