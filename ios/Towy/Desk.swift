@@ -58,12 +58,6 @@ final class Desk: ObservableObject {
         persist()
     }
 
-    func useSample(ev: Bool) {
-        mutate { job in
-            job = TowyMath.applySample(job, ev: ev)
-        }
-    }
-
     func patchContact(name: String? = nil, phone: String? = nil) {
         mutate { job in
             if let name { job.contactName = name }

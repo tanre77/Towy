@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { companyById, equipmentLabel, locationById, locations, trafficLabel, usd } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
+import { watchCrashes } from "@/lib/towy/firebase";
 
 export function Frame({ children }: { children: ReactNode }) {
   const hydrate = useTowy((s) => s.hydrate);
@@ -14,6 +15,7 @@ export function Frame({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     hydrate();
+    watchCrashes();
   }, [hydrate]);
 
   const showBack = view !== "home";

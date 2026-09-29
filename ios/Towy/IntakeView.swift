@@ -88,12 +88,6 @@ struct IntakeView: View {
             ChoiceRow(title: "Electric vehicle", selected: job.vehicle.ev) {
                 desk.patchVehicle { $0.ev.toggle() }
             }
-            HStack(spacing: 6) {
-                Button("Dead Civic, shoulder") { desk.useSample(ev: false) }.buttonStyle(.plain)
-                Text("·").foregroundStyle(TowyColor.muted)
-                Button("Model Y in the ditch") { desk.useSample(ev: true) }.buttonStyle(.plain)
-            }
-            .font(.subheadline)
         }
     }
 

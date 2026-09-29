@@ -15,7 +15,7 @@ export type Side = "right" | "left" | "median" | "ramp";
 export type Coverage = "none" | "roadside" | "full" | "deductible";
 export type Equipment = "wheel-lift" | "flatbed";
 export type Traffic = "light" | "moderate" | "heavy";
-export type HelpKind = "tire" | "jump" | "lockout" | "fuel" | "bulb" | "oil" | "wipers" | "tow";
+export type HelpKind = "tire" | "jump" | "lockout" | "fuel" | "bulb" | "oil" | "wipers" | "crack" | "tow";
 export type JobStatus = "draft" | "calling" | "quoted" | "enroute" | "checked" | "arrived" | "done";
 export type View = "home" | "intake" | "calling" | "quotes" | "job" | "insurer" | "operator";
 
@@ -41,6 +41,8 @@ export type Situation = {
   policeTouched: boolean;
   spare: boolean;
   wrongFuel: boolean;
+  shattered: boolean;
+  broken: boolean;
 };
 
 export type Quote = {
@@ -60,6 +62,9 @@ export type Quote = {
   operatorReceives: number;
   note: string;
   work: string;
+  dropMiles: number;
+  dropName: string;
+  dropFee: number;
 };
 
 export type Review = {
@@ -94,10 +99,12 @@ export type Job = {
   review: { stars: number; text: string } | null;
   payment?: { method: "apple-pay"; amount: number } | null;
   source: "member" | "insurer" | "seed";
+  origin: { lat: number; lng: number; source: "device" | "mile" } | null;
+  drop: { shop: DropShop; miles: number | null } | null;
 };
 
 export function atCurb(help: HelpKind): boolean {
-  return help === "bulb" || help === "oil" || help === "wipers";
+  return help === "bulb" || help === "oil" || help === "wipers" || help === "crack";
 }
 
 export function helpLabel(help: HelpKind): string {
@@ -108,6 +115,7 @@ export function helpLabel(help: HelpKind): string {
   if (help === "bulb") return "Headlight";
   if (help === "oil") return "Oil change";
   if (help === "wipers") return "Wipers";
+  if (help === "crack") return "Window crack";
   return "Tow";
 }
 
@@ -119,6 +127,7 @@ export const helpOptions: { id: HelpKind; title: string; detail: string }[] = [
   { id: "bulb", title: "Headlight", detail: "One bulb, in the driveway or a lot. A sealed housing is a shop." },
   { id: "oil", title: "Oil change", detail: "Filter and five quarts, where the car is parked." },
   { id: "wipers", title: "Wipers", detail: "Both blades. Done in a few minutes." },
+  { id: "crack", title: "Window crack", detail: "A chip filled where it sits. If someone broke the glass, they replace it there." },
   { id: "tow", title: "Tow", detail: "It will not roll, or it has to come out of a ditch." },
 ];
 
@@ -138,6 +147,7 @@ export function workLabel(job: Pick<Job, "help" | "vehicle" | "situation">): str
   if (job.help === "bulb") return "Headlight";
   if (job.help === "oil") return "Oil change";
   if (job.help === "wipers") return "Wipers";
+  if (job.help === "crack") return job.situation.broken ? "Broken glass" : job.situation.shattered ? "Glass replacement" : "Crack fill";
   return "Fuel drop";
 }
 
@@ -155,6 +165,8 @@ export type Location = {
   place: string;
   traffic: Traffic;
   note: string;
+  lat: number;
+  lng: number;
 };
 
 export type Company = {
@@ -194,6 +206,8 @@ export const locations: Location[] = [
     place: "Bexley",
     traffic: "heavy",
     note: "Shoulder narrows at the Nelson Road exit.",
+    lat: 39.9684,
+    lng: -82.9375,
   },
   {
     id: "i71-111",
@@ -203,6 +217,8 @@ export const locations: Location[] = [
     place: "Downtown",
     traffic: "moderate",
     note: "Innerbelt. Left lane is tight against the barrier.",
+    lat: 39.9612,
+    lng: -82.999,
   },
   {
     id: "sr315-4",
@@ -212,6 +228,8 @@ export const locations: Location[] = [
     place: "Ohio State",
     traffic: "heavy",
     note: "Event traffic stacking toward Lane Avenue.",
+    lat: 40.0025,
+    lng: -83.0215,
   },
   {
     id: "us33-12",
@@ -221,6 +239,8 @@ export const locations: Location[] = [
     place: "Dublin",
     traffic: "light",
     note: "Wide shoulder past the Frantz Road split.",
+    lat: 40.0992,
+    lng: -83.1095,
   },
   {
     id: "i270-22",
@@ -230,8 +250,36 @@ export const locations: Location[] = [
     place: "Easton",
     traffic: "moderate",
     note: "Outerbelt, east side. Ramp from Morse is slow.",
+    lat: 40.0518,
+    lng: -82.9164,
   },
 ];
+
+export type DropShop = {
+  id: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  rating: number;
+  reviews: number;
+  kind: "tire" | "repair";
+};
+
+export function milesBetween(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const r = 3958.8;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * r * Math.asin(Math.min(1, Math.sqrt(s)));
+}
+
+export function dropFor(job: Pick<Job, "help" | "vehicle" | "situation" | "drop">): { shop: DropShop; miles: number | null } | null {
+  if (!needsShop(job) || !job.drop) return null;
+  return job.drop;
+}
 
 export const companies: Company[] = [
   {
@@ -472,16 +520,19 @@ export function recomputeSituation(job: Job): Job {
     if (!situation.equipmentTouched) situation.equipment = recommendEquipment(job.vehicle, situation);
     if (!situation.winchTouched) situation.winch = recommendWinch(situation.position);
   }
-  if (!situation.policeTouched) situation.police = atCurb(job.help) ? false : recommendPolice(situation.position, situation.side, location.traffic);
+  if (!situation.policeTouched) {
+    situation.police = job.help === "crack" && situation.broken ? true : atCurb(job.help) ? false : recommendPolice(situation.position, situation.side, location.traffic);
+  }
   return { ...job, situation };
 }
 
-function serviceCall(company: Company, help: HelpKind): number {
-  if (help === "bulb") return round2(company.hook * 0.4 + 22);
-  if (help === "oil") return round2(company.hook * 0.55 + 48);
-  if (help === "wipers") return round2(company.hook * 0.35 + 32);
-  const factor = help === "jump" ? 0.5 : help === "fuel" ? 0.45 : help === "lockout" ? 0.6 : 0.7;
-  const fuel = help === "fuel" ? 12 : 0;
+function serviceCall(company: Company, job: Job): number {
+  if (job.help === "bulb") return round2(company.hook * 0.4 + 22);
+  if (job.help === "oil") return round2(company.hook * 0.55 + 48);
+  if (job.help === "wipers") return round2(company.hook * 0.35 + 32);
+  if (job.help === "crack") return job.situation.broken || job.situation.shattered ? round2(company.hook * 0.7 + 180) : round2(company.hook * 0.4 + 40);
+  const factor = job.help === "jump" ? 0.5 : job.help === "fuel" ? 0.45 : job.help === "lockout" ? 0.6 : 0.7;
+  const fuel = job.help === "fuel" ? 12 : 0;
   return round2(company.hook * factor + fuel);
 }
 
@@ -490,13 +541,16 @@ function quoteFor(company: Company, job: Job): Quote {
   const location = locationById(job.locationId);
   const shop = needsShop(job);
   const flatbed = shop && job.situation.equipment === "flatbed";
-  const hook = shop ? company.hook : serviceCall(company, job.help);
+  const hook = shop ? company.hook : serviceCall(company, job);
   const mileage = round2(miles * company.perMile);
   const equipmentFee = flatbed ? company.flatbed : 0;
   const winchFee = shop && job.situation.winch ? company.winch : 0;
   const afterHours = !atCurb(job.help) && SCENARIO.afterHours ? AFTER_HOURS_FEE : 0;
   const policeWait = job.situation.police ? 25 : 0;
-  const total = round2(hook + mileage + equipmentFee + winchFee + afterHours + policeWait);
+  const drop = dropFor(job);
+  const dropMiles = drop?.miles ?? 0;
+  const dropFee = drop ? round2(dropMiles * company.perMile) : 0;
+  const total = round2(hook + mileage + equipmentFee + winchFee + afterHours + policeWait + dropFee);
   const money = splitBill(total, job.coverage);
   const trafficAdd = location.traffic === "heavy" ? 8 : location.traffic === "moderate" ? 4 : 1;
   const etaMin = Math.max(12, Math.min(75, Math.round(8 + miles * 1.65 + company.bias + trafficAdd + (flatbed ? company.flatbedEta : 0) + (SCENARIO.afterHours ? 3 : 0))));
@@ -508,6 +562,9 @@ function quoteFor(company: Company, job: Job): Quote {
   if (!shop && job.help === "bulb") notes.push("One bulb. A sealed lamp housing still goes to a shop.");
   if (!shop && job.help === "oil") notes.push("Filter and five quarts. Driveway or a lot, not a bay.");
   if (!shop && job.help === "wipers") notes.push("Both blades, where the car is parked.");
+  if (!shop && job.help === "crack" && job.situation.broken) notes.push("Someone broke the glass. Replaced where the car sits.");
+  if (!shop && job.help === "crack" && job.situation.shattered && !job.situation.broken) notes.push("Pane replaced where the car sits. Not a shop.");
+  if (!shop && job.help === "crack" && !job.situation.shattered && !job.situation.broken) notes.push("Resin in the crack. You can drive as soon as it cures.");
   if (shop && job.help === "tire") notes.push("No spare. This one has to be towed.");
   if (shop && job.help === "fuel") notes.push("Wrong fuel has to be drained. This is a tow.");
   if (shop && job.help === "jump") notes.push("A jump will not start an electric car. Flatbed.");
@@ -529,6 +586,9 @@ function quoteFor(company: Company, job: Job): Quote {
     ...money,
     note: notes[0],
     work: workLabel(job),
+    dropMiles,
+    dropName: drop ? drop.shop.name : "",
+    dropFee,
   };
 }
 
@@ -578,7 +638,11 @@ export function callLines(company: Company, job: Job, result: CallResult): strin
     : atCurb(job.help)
       ? `${workLabel(job)}. Where the car is parked. ${quote.etaMin} minutes.`
       : `${workLabel(job)}. On the shoulder, not a shop. ${quote.etaMin} minutes.`;
-  return [...open, ask, `Estimate ${usd(quote.total)}. ${quote.note}`];
+  const drop = dropFor(job);
+  const dest = drop
+    ? `Drop at ${drop.shop.name}, ${drop.shop.address}. ${drop.shop.rating.toFixed(1)} on Google${drop.miles != null ? `, ${drop.miles.toFixed(1)} miles from this phone` : ""}.`
+    : null;
+  return [...open, ask, `Estimate ${usd(quote.total)}. ${quote.note}`, ...(dest ? [dest] : [])];
 }
 
 export function halfwayUpdate(job: Job): { etaMin: number; total: number; note: string } {
@@ -616,6 +680,8 @@ export function blankJob(source: Job["source"] = "member"): Job {
       policeTouched: false,
       spare: true,
       wrongFuel: false,
+      shattered: false,
+      broken: false,
     },
     locationId: "i70-108",
     coverage: "roadside",
@@ -627,6 +693,8 @@ export function blankJob(source: Job["source"] = "member"): Job {
     review: null,
     payment: null,
     source,
+    origin: null,
+    drop: null,
   });
 }
 
@@ -709,6 +777,8 @@ export const seedJobs: Job[] = [
       policeTouched: true,
       spare: true,
       wrongFuel: false,
+      shattered: false,
+      broken: false,
     },
     locationId: "i71-111",
     coverage: "roadside",
@@ -732,6 +802,8 @@ export const seedJobs: Job[] = [
       policeTouched: true,
       spare: true,
       wrongFuel: false,
+      shattered: false,
+      broken: false,
     },
     locationId: "i270-22",
     coverage: "deductible",

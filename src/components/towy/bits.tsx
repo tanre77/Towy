@@ -98,6 +98,7 @@ export function LineItems({ quote }: { quote: Quote }) {
     ["Winch", quote.winchFee],
     ["Monday night", quote.afterHours],
     ["Officer wait", quote.policeWait],
+    [quote.dropName ? `To ${quote.dropName}` : "To the shop", quote.dropFee],
   ].filter(([, amount]) => Number(amount) > 0);
   return (
     <details className="border-t border-line">

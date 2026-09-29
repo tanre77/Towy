@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		E7F100000000000000000013 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = E7F100000000000000000011 /* FirebaseCrashlytics */; };
+		E7F100000000000000000014 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = E7F100000000000000000012 /* FirebaseCore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		E7F100000000000000000005 /* Towy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Towy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E7F100000000000000000013 /* FirebaseCrashlytics in Frameworks */,
+				E7F100000000000000000014 /* FirebaseCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -55,6 +62,7 @@
 				E7F100000000000000000008 /* Sources */,
 				E7F100000000000000000002 /* Frameworks */,
 				E7F100000000000000000009 /* Resources */,
+				E7F100000000000000000015 /* Crashlytics */,
 			);
 			buildRules = (
 			);
@@ -65,6 +73,8 @@
 			);
 			name = Towy;
 			packageProductDependencies = (
+				E7F100000000000000000011 /* FirebaseCrashlytics */,
+				E7F100000000000000000012 /* FirebaseCore */,
 			);
 			productName = Towy;
 			productReference = E7F100000000000000000005 /* Towy.app */;
@@ -97,6 +107,9 @@
 			productRefGroup = E7F100000000000000000004 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
+			packageReferences = (
+				E7F100000000000000000010 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			targets = (
 				E7F100000000000000000006 /* Towy */,
 			);
@@ -112,6 +125,31 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		E7F100000000000000000015 /* Crashlytics */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
+			);
+			name = Crashlytics;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ ! -f \"${PROJECT_DIR}/Towy/GoogleService-Info.plist\" ]; then\n  exit 0\nfi\n\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		E7F100000000000000000008 /* Sources */ = {
@@ -239,6 +277,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E7F100000000000000000010 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E7F100000000000000000011 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E7F100000000000000000010 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		E7F100000000000000000012 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E7F100000000000000000010 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E7F10000000000000000000A /* Project object */;
 }

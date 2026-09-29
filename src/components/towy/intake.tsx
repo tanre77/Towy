@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Btn, Choice, Field, TextInput } from "@/components/towy/bits";
 import {
   coverageOptions,
+  dropFor,
   equipmentLabel,
   equipmentReason,
   helpOptions,
@@ -21,6 +22,7 @@ import {
   type Position,
   type Side,
 } from "@/lib/towy/model";
+import { findDrop } from "@/lib/towy/shops.functions";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
 const drives: Drivetrain[] = ["FWD", "RWD", "AWD", "4WD"];
@@ -31,13 +33,14 @@ export function IntakeScreen() {
   const job = useActiveJob();
   const step = useTowy((s) => s.step);
   const setStep = useTowy((s) => s.setStep);
-  const useSample = useTowy((s) => s.useSample);
   const patchContact = useTowy((s) => s.patchContact);
   const patchVehicle = useTowy((s) => s.patchVehicle);
   const setPreset = useTowy((s) => s.setPreset);
   const setHelp = useTowy((s) => s.setHelp);
   const setSpare = useTowy((s) => s.setSpare);
   const setWrongFuel = useTowy((s) => s.setWrongFuel);
+  const setShattered = useTowy((s) => s.setShattered);
+  const setBroken = useTowy((s) => s.setBroken);
   const setStarts = useTowy((s) => s.setStarts);
   const setRolls = useTowy((s) => s.setRolls);
   const setPosition = useTowy((s) => s.setPosition);
@@ -47,13 +50,55 @@ export function IntakeScreen() {
   const setPolice = useTowy((s) => s.setPolice);
   const useRecommendations = useTowy((s) => s.useRecommendations);
   const setLocation = useTowy((s) => s.setLocation);
+  const setOrigin = useTowy((s) => s.setOrigin);
+  const setDrop = useTowy((s) => s.setDrop);
   const setCoverage = useTowy((s) => s.setCoverage);
   const placeCalls = useTowy((s) => s.placeCalls);
+  const [locating, setLocating] = useState<"idle" | "searching" | "device" | "denied" | "failed" | "empty">("idle");
+  const searchGen = useRef(0);
+
+  function askPhone() {
+    if (!navigator.geolocation) {
+      setLocating("denied");
+      return;
+    }
+    const gen = ++searchGen.current;
+    setLocating("searching");
+    setDrop(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setOrigin({ lat, lng, source: "device" });
+        findDrop({ data: { lat, lng } })
+          .then((drop) => {
+            if (gen !== searchGen.current) return;
+            setDrop(drop);
+            setLocating(drop ? "device" : "empty");
+          })
+          .catch(() => {
+            if (gen === searchGen.current) setLocating("failed");
+          });
+      },
+      () => {
+        if (gen === searchGen.current) setLocating("denied");
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+    );
+  }
+
+  useEffect(() => {
+    if (!job || step !== 3 || !needsShop(job) || job.drop) return;
+    askPhone();
+    // Fresh GPS only. A saved city or mile marker is not the search point.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, job?.id, job?.help, job?.situation.spare, job?.situation.wrongFuel, job?.vehicle.ev, job?.drop]);
 
   if (!job) return null;
   const location = locations.find((item) => item.id === job.locationId) ?? locations[0];
   const oilOnEv = job.help === "oil" && job.vehicle.ev;
   const ready = Boolean(job.contactName.trim() && phoneOk(job.contactPhone) && vehicleOk(job.vehicle));
+  const shopDrop = dropFor(job);
 
   return (
     <div className="rise flex flex-1 flex-col">
@@ -153,15 +198,6 @@ export function IntakeScreen() {
             <Choice selected={job.vehicle.ev} onClick={() => patchVehicle({ ev: !job.vehicle.ev })}>
               Electric vehicle
             </Choice>
-            <p className="pt-2 text-sm text-muted">
-              <button type="button" className="text-fg" onClick={() => useSample("civic")}>
-                Dead Civic, shoulder
-              </button>
-              <span> · </span>
-              <button type="button" className="text-fg" onClick={() => useSample("ev")}>
-                Model Y in the ditch
-              </button>
-            </p>
           </div>
         </section>
       ) : null}
@@ -221,7 +257,13 @@ export function IntakeScreen() {
                                 ? "Filter and five quarts. Driveway or a lot. Not a bay."
                                 : job.help === "wipers"
                                   ? "Both blades. A few minutes, where it sits."
-                                  : equipmentReason(job.vehicle, job.situation)
+                                  : job.help === "crack" && job.situation.broken
+                                    ? "Someone broke it. They replace the glass here, and an officer can take the report."
+                                    : job.help === "crack" && job.situation.shattered
+                                      ? "The pane is gone. They bring a new one and fit it here."
+                                      : job.help === "crack"
+                                        ? "Resin in the chip or crack. It cures where the car sits."
+                                      : equipmentReason(job.vehicle, job.situation)
               }
               onUse={useRecommendations}
               actions={
@@ -249,6 +291,22 @@ export function IntakeScreen() {
                 <span className="mt-1 block text-sm text-muted">{job.situation.wrongFuel ? "That is a shop job. Tow it." : "Just empty. A can is enough."}</span>
               </Choice>
             ) : null}
+            {job.help === "crack" ? (
+              <>
+                <Choice selected={job.situation.shattered && !job.situation.broken} onClick={() => { setBroken(false); setShattered(!job.situation.shattered || job.situation.broken); }}>
+                  <span className="block text-fg">Pane is shattered</span>
+                  <span className="mt-1 block text-sm text-muted">
+                    {job.situation.shattered && !job.situation.broken ? "They replace the glass here." : "It's a crack. A fill is enough."}
+                  </span>
+                </Choice>
+                <Choice selected={job.situation.broken} onClick={() => setBroken(!job.situation.broken)}>
+                  <span className="block text-fg">Someone broke it</span>
+                  <span className="mt-1 block text-sm text-muted">
+                    {job.situation.broken ? "Smashed glass. Replaced here, with an officer if you want the report." : "Not a rock chip. Someone put it through."}
+                  </span>
+                </Choice>
+              </>
+            ) : null}
             {needsShop(job) ? (
               <Choice selected={job.situation.winch} onClick={() => setWinch(!job.situation.winch)}>
                 <span className="block text-fg">Fish it out</span>
@@ -263,6 +321,36 @@ export function IntakeScreen() {
         <section>
           <h1 className="text-2xl font-medium tracking-tight">{atCurb(job.help) ? "Where is it parked" : "Location"}</h1>
           {atCurb(job.help) ? <p className="mt-2 text-sm text-muted">Driveway, lot, or street. The nearest mile is enough.</p> : null}
+          {needsShop(job) ? (
+            <div className="mt-4 border-t border-line pt-4">
+              <p className="text-sm text-muted">Tow to</p>
+              {shopDrop ? (
+                <>
+                  <p className="mt-1 text-lg font-medium">{shopDrop.shop.name}</p>
+                  <p className="mt-1 text-sm text-muted">{shopDrop.shop.rating.toFixed(1)} on Google</p>
+                  <p className="mt-1 text-sm text-muted">
+                    {shopDrop.shop.address}
+                    {shopDrop.miles != null ? ` · ${shopDrop.miles.toFixed(1)} mi from this phone` : " · near this phone"}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-muted">
+                  {locating === "searching"
+                    ? "Checking Google from this phone."
+                    : locating === "denied"
+                      ? "Allow location. A saved city is not used."
+                      : locating === "failed"
+                        ? "Google didn't answer for this spot."
+                        : locating === "empty"
+                          ? "No tire or repair shop came back for this spot."
+                          : "This uses the phone, not a saved place."}
+                </p>
+              )}
+              <button type="button" className="press mt-3 text-sm text-fg" onClick={askPhone}>
+                Use this phone's location
+              </button>
+            </div>
+          ) : null}
           <div className="mt-4">
             {locations.map((item) => (
               <button
@@ -285,11 +373,15 @@ export function IntakeScreen() {
               </button>
             ))}
           </div>
-          {atCurb(job.help) ? null : (
+          {atCurb(job.help) && !(job.help === "crack" && job.situation.broken) ? null : (
           <div className="mt-4">
             <Choice selected={job.situation.police} onClick={() => setPolice(!job.situation.police)}>
               <span className="block text-fg">Request an officer</span>
-              <span className="mt-1 block text-sm text-muted">{policeReason(job.situation.position, job.situation.side, location.traffic)}</span>
+              <span className="mt-1 block text-sm text-muted">
+                {job.help === "crack" && job.situation.broken
+                  ? "For the report. The glass is still replaced here."
+                  : policeReason(job.situation.position, job.situation.side, location.traffic)}
+              </span>
             </Choice>
           </div>
           )}
@@ -319,6 +411,9 @@ export function IntakeScreen() {
             <Row k="Vehicle" v={`${job.vehicle.year} ${job.vehicle.make} ${job.vehicle.model}`} />
             <Row k="Stop" v={`${location.road} mile ${location.mile}, ${sideLabel(job.situation.side).toLowerCase()}`} />
             <Row k="Work" v={workLabel(job)} />
+            {shopDrop ? (
+              <Row k="Drop" v={`${shopDrop.shop.name}${shopDrop.miles != null ? ` · ${shopDrop.miles.toFixed(1)} mi` : ""}`} />
+            ) : null}
             <Row
               k="Equipment"
               v={

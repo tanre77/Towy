@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ApplePayButton, Btn, LineItems, Split, Stars } from "@/components/towy/bits";
-import { atCurb, companyById, companyScore, needsShop, equipmentLabel, usd, workLabel } from "@/lib/towy/model";
+import { atCurb, companyById, companyScore, dropFor, needsShop, equipmentLabel, usd, workLabel } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
 export function QuotesScreen() {
@@ -11,6 +11,7 @@ export function QuotesScreen() {
   const [paying, setPaying] = useState(false);
 
   if (!job) return null;
+  const drop = dropFor(job);
   const quotes = job.calls.filter((call) => call.quote);
   const declines = job.calls.filter((call) => !call.available);
   const selected = quotes.find((call) => call.companyId === picked) ?? quotes[0];
@@ -45,6 +46,12 @@ export function QuotesScreen() {
           <>{workLabel(job)}. Done on the shoulder. Nearest truck that can take it.</>
         )}
       </p>
+      {drop ? (
+        <p className="mt-2 text-sm text-muted">
+          Drop at {drop.shop.name}, {drop.shop.address}. {drop.shop.rating.toFixed(1)} on Google
+          {drop.miles != null ? `. ${drop.miles.toFixed(1)} mi from this phone.` : "."}
+        </p>
+      ) : null}
       {declines.length ? (
         <ul className="mt-4 space-y-1">
           {declines.map((call) => {
