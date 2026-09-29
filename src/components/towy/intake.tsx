@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Btn, Choice, Field, TextInput } from "@/components/towy/bits";
+import { Btn, Choice, Field, Skeleton, TextInput } from "@/components/towy/bits";
 import {
   carColors,
   carMark,
@@ -106,10 +106,11 @@ export function IntakeScreen() {
   const shopDrop = dropFor(job);
 
   return (
-    <div className="rise flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col">
+      <div key={step} className="view-enter">
       {step === 0 ? (
         <section>
-          <h1 className="text-2xl font-medium tracking-tight">What do you need?</h1>
+          <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>What do you need?</h1>
           <p className="mt-2 text-sm text-muted">On the road, or the small jobs that never need a bay.</p>
           {garage[0] ? <p className="mt-2 text-sm text-muted">{carMark(garage[0].vehicle)} is saved. Continue skips the vehicle screen.</p> : null}
           <div className="mt-6">
@@ -139,7 +140,7 @@ export function IntakeScreen() {
 
       {step === 1 ? (
         <section>
-          <h1 className="text-2xl font-medium tracking-tight">Vehicle</h1>
+          <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>Vehicle</h1>
           <div className="mt-6 space-y-4">
             {garage.length ? (
               <div>
@@ -258,7 +259,7 @@ export function IntakeScreen() {
 
       {step === 2 ? (
         <section>
-          <h1 className="text-2xl font-medium tracking-tight">{atCurb(job.help) ? "Where it sits" : "Situation"}</h1>
+          <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>{atCurb(job.help) ? "Where it sits" : "Situation"}</h1>
           {garage.length && vehicleOk(job.vehicle) ? (
             <button type="button" className="press mt-2 text-sm text-muted" onClick={() => setStep(1)}>
               {carMark(job.vehicle)} · different car
@@ -378,7 +379,7 @@ export function IntakeScreen() {
 
       {step === 3 ? (
         <section>
-          <h1 className="text-2xl font-medium tracking-tight">{atCurb(job.help) ? "Where is it parked" : "Location"}</h1>
+          <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>{atCurb(job.help) ? "Where is it parked" : "Location"}</h1>
           {atCurb(job.help) ? <p className="mt-2 text-sm text-muted">Driveway, lot, or street. The nearest mile is enough.</p> : null}
           {needsShop(job) ? (
             <div className="mt-4 border-t border-line pt-4">
@@ -394,21 +395,30 @@ export function IntakeScreen() {
                     {shopDrop.miles != null ? ` · ${shopDrop.miles.toFixed(1)} mi from this phone` : " · near this phone"}
                   </p>
                 </>
+              ) : locating === "searching" ? (
+                <div aria-busy="true" aria-live="polite">
+                  <Skeleton className="mt-2 h-6 w-48" />
+                  <Skeleton className="mt-2 h-4 w-64" />
+                  <p className="mt-3 text-sm text-muted">Looking near this phone for a tire or repair shop.</p>
+                </div>
               ) : (
-                <p className="mt-1 text-sm text-muted">
-                  {locating === "searching"
-                    ? "Looking for a tire or repair shop from this phone."
-                    : locating === "denied"
-                      ? "Allow location. A saved city is not used."
+                <>
+                  <p className="mt-1 text-lg font-medium">
+                    {locating === "denied" ? "Location stayed off" : locating === "failed" || locating === "empty" ? "No shop in range" : "Waiting on this phone"}
+                  </p>
+                  <p className="mt-1 text-sm text-muted">
+                    {locating === "denied"
+                      ? "Allow location so the drop is a real shop near the car. A saved city is not used."
                       : locating === "failed"
-                        ? "No shop came back for this spot."
+                        ? "The search did not come back. Try this phone again."
                         : locating === "empty"
                           ? "No tire or repair shop came back for this spot."
-                          : "This uses the phone, not a saved place."}
-                </p>
+                          : "The drop uses this phone, not a saved place."}
+                  </p>
+                </>
               )}
-              <button type="button" className="press mt-3 text-sm text-fg" onClick={askPhone}>
-                Use this phone's location
+              <button type="button" className="press mt-3 inline-flex min-h-11 items-center text-sm text-fg" onClick={askPhone} disabled={locating === "searching"}>
+                {locating === "searching" ? "Searching" : "Use this phone's location"}
               </button>
             </div>
           ) : null}
@@ -418,7 +428,7 @@ export function IntakeScreen() {
                 key={item.id}
                 type="button"
                 onClick={() => setLocation(item.id)}
-                className={`press flex w-full items-baseline gap-4 border-t border-line py-4 text-left ${
+                className={`press flex w-full items-baseline gap-4 border-t border-line py-4 text-left transition-colors ${
                   item.id === job.locationId ? "text-fg" : "text-muted"
                 }`}
               >
@@ -451,7 +461,7 @@ export function IntakeScreen() {
 
       {step === 4 ? (
         <section>
-          <h1 className="text-2xl font-medium tracking-tight">Coverage</h1>
+          <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>Coverage</h1>
           <p className="mt-2 text-sm text-muted">
             {job.source === "insurer"
               ? "The insurance company pays Shoulder $18. It is not on this bill."
@@ -492,6 +502,7 @@ export function IntakeScreen() {
           </dl>
         </section>
       ) : null}
+      </div>
 
       <div className="mt-8">
         {step < 4 ? (
@@ -514,7 +525,15 @@ export function IntakeScreen() {
             Call the shops
           </Btn>
         )}
-        {step === 1 && !ready ? <p className="mt-3 text-sm text-subtle">Add a name and a 10-digit phone so the shop can call back.</p> : null}
+        {step === 1 && !ready ? (
+          <p className="mt-3 text-sm text-subtle">
+            {!job.contactName.trim()
+              ? "Add a name so the shop knows who to ask for."
+              : !phoneOk(job.contactPhone)
+                ? "Phone needs 10 digits so the shop can call back."
+                : "Year, make, and model are still missing."}
+          </p>
+        ) : null}
       </div>
     </div>
   );

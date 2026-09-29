@@ -1,4 +1,4 @@
-import { Btn } from "@/components/towy/bits";
+import { Btn, EmptyState } from "@/components/towy/bits";
 import { companies, companyById, equipmentLabel, locationById, positionLabel, usd, type Job } from "@/lib/towy/model";
 import { useTowy } from "@/lib/towy/store";
 
@@ -27,22 +27,32 @@ export function OperatorScreen() {
 
   return (
     <div className="rise flex flex-1 flex-col">
-      <h1 className="text-2xl font-medium tracking-tight">{yard?.name}</h1>
+      <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>
+        {yard?.name}
+      </h1>
       <p className="mt-1 text-sm text-muted">{yard?.yard}</p>
-      <div className="mt-4 flex gap-4 overflow-x-auto">
+      <div className="chip-row mt-4 flex gap-1">
         {companies.map((company) => (
           <button
             key={company.id}
             type="button"
             onClick={() => setYard(company.id)}
-            className={`press shrink-0 py-2 text-sm ${company.id === yardId ? "text-fg" : "text-muted"}`}
+            aria-pressed={company.id === yardId}
+            className={`press relative min-h-11 shrink-0 px-2 text-sm transition-colors ${company.id === yardId ? "text-fg" : "text-muted"}`}
           >
             {company.name}
+            <span className={`absolute inset-x-2 bottom-2 h-px transition-colors ${company.id === yardId ? "bg-fg" : "bg-transparent"}`} aria-hidden="true" />
           </button>
         ))}
       </div>
-      <div className="mt-6">
-        {visible.length === 0 ? <p className="text-sm text-muted">Nothing on this shop yet. Run a member stop, or switch shops.</p> : null}
+      <div className="stagger mt-6">
+        {visible.length === 0 ? (
+          <EmptyState title="Nothing on this board" body={`${yard?.name ?? "This shop"} has no stops yet. Run one from the map, or switch shops.`}>
+            <Btn variant="line" onClick={() => setView("home")}>
+              Back to the map
+            </Btn>
+          </EmptyState>
+        ) : null}
         {visible.map((job) => {
           const location = locationById(job.locationId);
           const quote = job.calls.find((call) => call.companyId === yardId)?.quote;
@@ -113,7 +123,11 @@ export function OperatorScreen() {
                   </Btn>
                 ) : null}
                 {mine ? (
-                  <button type="button" className="self-start text-sm text-muted" onClick={() => useTowy.setState({ activeId: job.id, view: "job" })}>
+                  <button
+                    type="button"
+                    className="press inline-flex min-h-11 items-center self-start text-sm text-muted"
+                    onClick={() => useTowy.setState({ activeId: job.id, view: "job" })}
+                  >
                     Open the member view
                   </button>
                 ) : null}
@@ -122,7 +136,7 @@ export function OperatorScreen() {
           );
         })}
       </div>
-      <button type="button" onClick={() => setView("insurer")} className="mt-6 self-start text-sm text-muted">
+      <button type="button" onClick={() => setView("insurer")} className="press mt-6 inline-flex min-h-11 items-center self-start text-sm text-muted">
         See insurer pricing
       </button>
     </div>

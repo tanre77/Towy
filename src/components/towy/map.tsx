@@ -49,6 +49,7 @@ export function CarMap({ car, pins, truck = null }: { car: Car; pins: Pin[]; tru
   const pinsRef = useRef<import("leaflet").Marker[]>([]);
   const pinsLive = useRef(pins);
   const carLive = useRef(car);
+  const [ready, setReady] = useState(false);
   pinsLive.current = pins;
   carLive.current = car;
   truckLive.current = truck;
@@ -57,14 +58,22 @@ export function CarMap({ car, pins, truck = null }: { car: Car; pins: Pin[]; tru
     const node = el.current;
     if (!node) return;
     let dead = false;
+    const giveUp = window.setTimeout(() => {
+      if (!dead) setReady(true);
+    }, 2500);
     void import("leaflet").then((L) => {
       if (dead || mapRef.current) return;
       const here = carLive.current;
       const map = L.map(node, { zoomControl: false, attributionControl: true }).setView([here.lat, here.lng], 12);
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap",
         maxZoom: 19,
       }).addTo(map);
+      const show = () => {
+        if (!dead) setReady(true);
+      };
+      tiles.once("load", show);
+      tiles.once("tileerror", show);
       carRef.current = L.marker([here.lat, here.lng], {
         icon: L.divIcon({ className: "", html: pinHtml(here), iconSize: [72, 44], iconAnchor: [36, 14] }),
         zIndexOffset: 1000,
@@ -94,6 +103,7 @@ export function CarMap({ car, pins, truck = null }: { car: Car; pins: Pin[]; tru
     });
     return () => {
       dead = true;
+      window.clearTimeout(giveUp);
       pinsRef.current = [];
       carRef.current = null;
       truckRef.current = null;
@@ -110,12 +120,16 @@ export function CarMap({ car, pins, truck = null }: { car: Car; pins: Pin[]; tru
     if (!map || !marker) return;
     marker.setLatLng([car.lat, car.lng]);
     map.panTo([car.lat, car.lng], { animate: true });
+  }, [car.lat, car.lng]);
+
+  useEffect(() => {
+    if (!carRef.current) return;
     void import("leaflet").then((L) => {
       carRef.current?.setIcon(
         L.divIcon({ className: "", html: pinHtml(car), iconSize: [72, 44], iconAnchor: [36, 14] }),
       );
     });
-  }, [car.lat, car.lng, car.color, car.plate, car.model]);
+  }, [car.color, car.plate, car.model]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -167,7 +181,14 @@ export function CarMap({ car, pins, truck = null }: { car: Car; pins: Pin[]; tru
     );
   }
 
-  return <div ref={el} className="car-map" role="img" aria-label="Map with your car" />;
+  return (
+    <div className="car-map" role={ready ? "img" : "status"} aria-label={ready ? "Map with your car" : "Loading the corridor"} aria-busy={!ready}>
+      <div ref={el} className="absolute inset-0" />
+      <div className={`map-veil pointer-events-none absolute inset-0 flex flex-col justify-end bg-surface p-5 ${ready ? "is-gone" : ""}`} aria-hidden={ready}>
+        <p className="text-sm text-muted">Loading the corridor</p>
+      </div>
+    </div>
+  );
 }
 
 export function useTruckSpot(job: Job | null) {

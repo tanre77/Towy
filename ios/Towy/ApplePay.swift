@@ -14,7 +14,7 @@ enum ApplePay {
         let share = NSDecimalNumber(value: amount)
         request.paymentSummaryItems = [
             PKPaymentSummaryItem(label: "Your share of the service", amount: share),
-            PKPaymentSummaryItem(label: "Towy", amount: share),
+            PKPaymentSummaryItem(label: "shoulder", amount: share),
         ]
 
         guard PKPaymentAuthorizationViewController.canMakePayments(usingNetworks: request.supportedNetworks),

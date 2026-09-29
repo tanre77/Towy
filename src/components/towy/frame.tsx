@@ -1,7 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { Mark } from "@/components/towy/mark";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { companyById, equipmentLabel, locationById, locations, trafficLabel, usd } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 import { watchCrashes } from "@/lib/towy/firebase";
@@ -13,10 +13,16 @@ export function Frame({ children }: { children: ReactNode }) {
   const back = useTowy((s) => s.back);
   const setView = useTowy((s) => s.setView);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     hydrate();
     watchCrashes();
   }, [hydrate]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if (view === "home") return;
+    document.querySelector<HTMLElement>("[data-screen-title]")?.focus({ preventScroll: true });
+  }, [view, step]);
 
   const showBack = view !== "home";
   const kicker =
@@ -40,18 +46,28 @@ export function Frame({ children }: { children: ReactNode }) {
     <div className="mx-auto flex min-h-dvh w-full max-w-6xl lg:gap-16 lg:px-8">
       <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col">
         <header className="safe-t sticky top-0 z-10 flex items-center justify-between gap-3 bg-bg px-5 pb-4">
-          <div className="flex items-center gap-1">
-            {showBack ? (
-              <button type="button" aria-label="Back" onClick={back} className="press grid size-11 place-items-center">
+          <div className="flex min-w-0 items-center">
+            <div className={`back-slot ${showBack ? "is-open" : ""}`}>
+              <button
+                type="button"
+                aria-label="Back"
+                aria-hidden={!showBack}
+                tabIndex={showBack ? 0 : -1}
+                disabled={!showBack}
+                onClick={back}
+                className="press grid size-11 place-items-center"
+              >
                 <ArrowLeft className="size-5" />
               </button>
-            ) : null}
+            </div>
             <button type="button" onClick={() => setView("home")} className="flex items-center gap-2">
               <Mark className="size-8" />
               <span className="text-base font-semibold tracking-tight">shoulder</span>
             </button>
           </div>
-          <p className="text-sm text-muted">{kicker}</p>
+          <p key={kicker} className="kicker text-sm text-muted">
+            {kicker}
+          </p>
         </header>
         <div className="safe-b flex flex-1 flex-col px-5">{children}</div>
       </div>

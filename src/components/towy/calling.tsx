@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Btn } from "@/components/towy/bits";
+import { Btn, EmptyState, Skeleton } from "@/components/towy/bits";
 import { callLines, companyById } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
@@ -33,17 +33,34 @@ export function CallingScreen() {
   }, [phase, index, current]);
 
   useEffect(() => {
-    if (done && job) finish(job.id);
+    if (!done || !job) return;
+    const timer = window.setTimeout(() => finish(job.id), 520);
+    return () => window.clearTimeout(timer);
   }, [done, job]);
 
   if (!job) return null;
 
-  if (calls.length === 0 || done || !current || !company) {
+  if (calls.length === 0) {
     return (
-      <div className="flex flex-1 flex-col justify-center">
-        <p className="text-muted">{calls.length === 0 ? "No shops in range for this stop." : "Writing the estimates."}</p>
-        <Btn className="mt-4" variant="line" onClick={() => (calls.length === 0 ? useTowy.setState({ view: "intake", step: 3 }) : finish(job.id))}>
-          {calls.length === 0 ? "Back to the stop" : "See estimates"}
+      <div className="rise flex flex-1 flex-col justify-center">
+        <EmptyState title="No shops in range" body="Nothing covers this mile with the equipment on the stop. Change the stop and call again.">
+          <Btn variant="line" onClick={() => useTowy.setState({ view: "intake", step: 3 })}>
+            Back to the stop
+          </Btn>
+        </EmptyState>
+      </div>
+    );
+  }
+
+  if (done || !current || !company) {
+    return (
+      <div className="rise flex flex-1 flex-col pt-8" aria-busy="true" aria-live="polite">
+        <p className="text-sm text-muted">Writing the estimates</p>
+        <Skeleton className="mt-4 h-8 w-40" />
+        <Skeleton className="mt-6 h-16 w-full" />
+        <Skeleton className="mt-3 h-16 w-full" />
+        <Btn className="mt-auto w-full" variant="line" onClick={() => finish(job.id)}>
+          See estimates
         </Btn>
       </div>
     );
@@ -54,14 +71,22 @@ export function CallingScreen() {
 
   return (
     <div className="rise flex flex-1 flex-col pt-6">
-      <p className="text-sm text-muted">
+      <p key={phase} className="line-in text-sm text-muted">
         {phase === "dial" ? "Ringing" : current.available ? "Connected" : "Declined"} · {Math.min(index + 1, calls.length)} / {calls.length}
       </p>
-      <h1 className="mt-2 text-2xl font-medium tracking-tight">{company.name}</h1>
+      <h1 className="screen-title mt-2 text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>
+        {company.name}
+      </h1>
       <p className="mt-1 text-sm text-muted">
         {company.yard} · {company.phone}
       </p>
-      <div className="mt-8 space-y-3 border-t border-line pt-4" aria-live="polite">
+      {phase === "dial" ? (
+        <div className="relative mt-8 size-16" aria-hidden="true">
+          <span className="call-ring absolute inset-0 rounded-full border border-accent" />
+          <span className="absolute inset-3 rounded-full border border-line" />
+        </div>
+      ) : null}
+      <div key={`${company.id}-${phase}`} className="stagger mt-8 space-y-3 border-t border-line pt-4" aria-live="polite">
         {visible.map((line) => (
           <p key={line} className="text-sm">
             {line}
@@ -69,7 +94,7 @@ export function CallingScreen() {
         ))}
       </div>
       {phase === "talk" && current.quote ? (
-        <p className="mt-6 font-display text-5xl leading-none tabular-nums">
+        <p className="line-in mt-6 font-display text-5xl leading-none tabular-nums">
           {current.quote.etaMin}
           <span className="ml-2 text-2xl text-muted">min</span>
         </p>

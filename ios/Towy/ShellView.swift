@@ -53,7 +53,7 @@ struct ShellView: View {
                 } label: {
                     HStack(spacing: 8) {
                         HookMark()
-                        Text("towy").font(.body.weight(.semibold))
+                        Text("shoulder").font(.body.weight(.semibold))
                     }
                 }
                 .buttonStyle(.plain)

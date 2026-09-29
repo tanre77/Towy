@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ApplePayButton, Btn, LineItems, Split, Stars } from "@/components/towy/bits";
+import { ApplePayButton, Btn, EmptyState, LineItems, Split, Stars } from "@/components/towy/bits";
 import { atCurb, companyById, companyScore, dropFor, needsShop, equipmentLabel, usd, workLabel } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
@@ -34,7 +34,9 @@ export function QuotesScreen() {
 
   return (
     <div className="rise flex flex-1 flex-col">
-      <h1 className="text-2xl font-medium tracking-tight">Estimates</h1>
+      <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>
+        Estimates
+      </h1>
       <p className="mt-2 text-sm text-muted">
         {needsShop(job) ? (
           <>
@@ -66,7 +68,14 @@ export function QuotesScreen() {
           })}
         </ul>
       ) : null}
-      <div className="mt-6">
+      <div className="stagger mt-6">
+        {quotes.length === 0 ? (
+          <EmptyState title="No shop could take this stop" body="Nothing answered for this mile and equipment. Change the stop and call again.">
+            <Btn variant="line" onClick={() => useTowy.setState({ view: "intake", step: 3 })}>
+              Change the stop
+            </Btn>
+          </EmptyState>
+        ) : null}
         {quotes.map((call) => {
           const quote = call.quote;
           const company = companyById(call.companyId);
@@ -79,7 +88,7 @@ export function QuotesScreen() {
               key={company.id}
               type="button"
               onClick={() => setPicked(company.id)}
-              className={`press w-full border-t border-line py-4 text-left ${on ? "text-fg" : "text-muted"}`}
+              className={`press w-full border-t border-line py-4 text-left transition-colors ${on ? "text-fg" : "text-muted"}`}
             >
               <span className="flex items-baseline justify-between gap-3">
                 <span>
@@ -103,13 +112,11 @@ export function QuotesScreen() {
         })}
       </div>
       {selected?.quote ? (
-        <div className="mt-2">
+        <div key={selected.companyId} className="view-enter mt-2">
           <Split quote={selected.quote} />
           <LineItems quote={selected.quote} />
         </div>
-      ) : (
-        <p className="mt-6 text-sm text-muted">No shop could take this stop. Change the equipment or the mile marker.</p>
-      )}
+      ) : null}
       {selected?.quote && share === 0 ? (
         <div className="mt-6">
           <p className="text-sm text-muted">Insurance covers the service. Nothing to charge.</p>
@@ -119,14 +126,14 @@ export function QuotesScreen() {
         </div>
       ) : null}
       {selected?.quote && share > 0 ? (
-        <div className="sticky bottom-4 z-10 mt-4 rounded-xl bg-surface p-4">
+        <div className="rise sticky bottom-4 z-10 mt-4 rounded-xl bg-surface p-4">
           <p className="text-sm text-muted">Your share of the service</p>
           <p className="mt-1 text-2xl font-medium tabular-nums">{usd(share)}</p>
           <p className="mt-2 text-sm text-muted">
             {covered > 0 ? `Insurance covers ${usd(covered)} and is not charged here.` : "No insurance on this stop, so the whole tow is yours."}
           </p>
           <div className="mt-4">
-            <ApplePayButton label={`Pay ${usd(share)} with Apple Pay`} disabled={paying} onClick={pay} />
+            <ApplePayButton label={`Pay ${usd(share)} with Apple Pay`} busy={paying} onClick={pay} />
           </div>
         </div>
       ) : null}

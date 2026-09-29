@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Btn, LineItems, Split, Stars } from "@/components/towy/bits";
 import { CarMap, useTruckSpot } from "@/components/towy/map";
 import { companyById, dropFor, locationById, usd } from "@/lib/towy/model";
@@ -25,8 +25,13 @@ export function JobScreen() {
   const markDone = useTowy((s) => s.markDone);
   const saveReview = useTowy((s) => s.saveReview);
   const [calling, setCalling] = useState(false);
-  const [stars, setStars] = useState(0);
-  const [text, setText] = useState("");
+  const [stars, setStars] = useState(() => job?.review?.stars ?? 0);
+  const [text, setText] = useState(() => job?.review?.text ?? "");
+
+  useEffect(() => {
+    setStars(job?.review?.stars ?? 0);
+    setText(job?.review?.text ?? "");
+  }, [job?.id, job?.review?.stars, job?.review?.text]);
 
   if (!job) return null;
   const company = job.selectedCompanyId ? companyById(job.selectedCompanyId) : undefined;
@@ -57,10 +62,12 @@ export function JobScreen() {
         {location.road} mile {location.mile} · {location.place}
         {drop ? ` · ${drop.shop.name}` : ""}
       </p>
-      <h1 className="mt-2 text-2xl font-medium tracking-tight">{company?.name ?? "Shop confirmed"}</h1>
-      <p className="mt-4 font-display text-6xl leading-none tabular-nums">{calling ? "…" : liveEta === 0 ? "Here" : liveEta}</p>
-      <p className="mt-1 text-sm text-muted">{calling || liveEta === 0 ? "" : "minutes"}</p>
-      <p className="mt-2 text-sm text-muted" aria-live="polite">
+      <h1 className="screen-title mt-2 text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>
+        {company?.name ?? "Shop confirmed"}
+      </h1>
+      <p className="mt-4 font-display text-6xl leading-none tabular-nums">{liveEta === 0 ? "Here" : liveEta}</p>
+      <p className="mt-1 text-sm text-muted">{liveEta === 0 ? "" : "minutes"}</p>
+      <p key={calling ? "calling" : (job.live?.note ?? "rolling")} className="line-in mt-2 text-sm text-muted" aria-live="polite">
         {calling ? `Calling ${company?.name ?? "the shop"} for a live update.` : (job.live?.note ?? "Truck is rolling.")}
       </p>
       {quote ? <p className="mt-2 text-sm tabular-nums text-muted">Quote held at {usd(job.live?.total ?? quote.total)}</p> : null}
@@ -69,11 +76,21 @@ export function JobScreen() {
       ) : null}
 
       <ol className="mt-6 border-t border-line">
-        {steps.map((step, index) => (
-          <li key={step.id} className={`border-b border-line py-2 text-sm ${index <= at ? "text-fg" : "text-subtle"}`}>
-            {step.label}
-          </li>
-        ))}
+        {steps.map((step, index) => {
+          const state = index < at ? "done" : index === at ? "now" : "later";
+          return (
+            <li key={step.id} className={`flex items-center gap-3 border-b border-line py-2 text-sm ${state === "later" ? "text-subtle" : "text-fg"}`}>
+              <span
+                className={`size-1.5 shrink-0 rounded-full transition-colors duration-300 ${state === "later" ? "bg-line" : "bg-fg"} ${state === "now" ? "step-live" : ""}`}
+                aria-hidden="true"
+              />
+              <span>
+                {step.label}
+                {state === "now" ? <span className="sr-only">, current</span> : null}
+              </span>
+            </li>
+          );
+        })}
       </ol>
 
       {quote ? (
@@ -85,8 +102,8 @@ export function JobScreen() {
 
       <div className="mt-6 space-y-2">
         {job.status !== "done" && job.status !== "arrived" ? (
-          <Btn className="w-full" disabled={calling} onClick={checkIn}>
-            {job.status === "checked" ? "Call the shop again" : "Halfway check-in call"}
+          <Btn className="w-full" disabled={calling} aria-busy={calling} onClick={checkIn}>
+            {calling ? "Calling the shop" : job.status === "checked" ? "Call the shop again" : "Halfway check-in call"}
           </Btn>
         ) : null}
         {job.status === "checked" ? (
@@ -112,9 +129,17 @@ export function JobScreen() {
         >
           <p className="font-medium">How was {company?.name ?? "the shop"}?</p>
           <p className="mt-1 text-sm text-muted">Stays on the shop that showed up.</p>
-          <div className="mt-3 flex gap-1">
+          <div className="mt-3 flex gap-1" role="radiogroup" aria-label="Rating">
             {Array.from({ length: 5 }, (_, i) => (
-              <button key={i} type="button" aria-label={`${i + 1} stars`} onClick={() => setStars(i + 1)} className="press grid size-11 place-items-center">
+              <button
+                key={i}
+                type="button"
+                role="radio"
+                aria-checked={stars === i + 1}
+                aria-label={`${i + 1} stars`}
+                onClick={() => setStars(i + 1)}
+                className="press grid size-11 place-items-center"
+              >
                 <Stars value={stars > i ? 1 : 0} count={1} labeled={false} />
               </button>
             ))}
@@ -128,7 +153,11 @@ export function JobScreen() {
           <Btn className="mt-3 w-full" type="submit" disabled={stars < 1}>
             {job.review ? "Update review" : "Save review"}
           </Btn>
-          {job.review ? <p className="mt-3 text-sm text-ok">Saved on {company?.name}.</p> : null}
+          {job.review ? (
+            <p className="rise mt-3 text-sm text-ok" role="status">
+              Saved on {company?.name}.
+            </p>
+          ) : null}
         </form>
       ) : null}
     </div>

@@ -456,10 +456,10 @@ enum TowyMath {
 
     static func coverageDetail(_ coverage: Coverage) -> String {
         switch coverage {
-        case .none: "Member pays the whole tow. Towy's 6% applies to all of it."
-        case .roadside: "Policy pays the first $125. Towy's cut skips that part."
+        case .none: "Member pays the whole tow. Shoulder's 6% applies to all of it."
+        case .roadside: "Policy pays the first $125. Shoulder's cut skips that part."
         case .deductible: "Member pays the first $100. Insurance pays the rest, untouched."
-        case .full: "Insurance pays the shop in full. Towy's coordination fee is $0."
+        case .full: "Insurance pays the shop in full. Shoulder's coordination fee is $0."
         }
     }
 }

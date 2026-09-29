@@ -71,21 +71,122 @@
 }
 
 .press {
-  transition-property: transform, opacity;
+  transition-property: transform, opacity, background-color, color, border-color;
   transition-duration: 150ms;
   transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .press:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.96);
 }
 
-.rise {
-  animation: towy-rise 250ms cubic-bezier(0.22, 1, 0.36, 1) both;
+button:disabled {
+  cursor: not-allowed;
+}
+
+.rise,
+.view-enter,
+.kicker,
+.line-in {
+  animation: towy-rise 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.stagger > * {
+  animation: towy-rise 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.stagger > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+
+.stagger > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+
+.stagger > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+
+.stagger > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+
+.stagger > *:nth-child(n + 6) {
+  animation-delay: 200ms;
 }
 
 .call-ring {
   animation: towy-ring 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.step-live {
+  box-shadow: 0 0 0 4px rgba(242, 244, 246, 0.14);
+}
+
+.skeleton {
+  display: block;
+  border-radius: 0.375rem;
+  background: linear-gradient(90deg, var(--color-surface) 0%, var(--color-surface-2) 45%, var(--color-surface) 100%);
+  background-size: 200% 100%;
+  animation: towy-shimmer 1.4s linear infinite;
+}
+
+.map-veil {
+  transition: opacity 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.map-veil.is-gone {
+  opacity: 0;
+}
+
+.back-slot {
+  overflow: hidden;
+  width: 0;
+  opacity: 0;
+  transition:
+    width 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.back-slot.is-open {
+  width: 2.75rem;
+  opacity: 1;
+}
+
+.screen-title:focus {
+  outline: none;
+}
+
+.chevron {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+details[open] .chevron {
+  transform: rotate(180deg);
+}
+
+.chip-row {
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.chip-row > * {
+  scroll-snap-align: start;
+}
+
+input,
+textarea {
+  transition: border-color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+label:focus-within input,
+textarea:focus {
+  border-color: var(--color-fg);
 }
 
 @keyframes towy-rise {
@@ -102,30 +203,65 @@
 @keyframes towy-ring {
   0% {
     transform: scale(0.92);
-    opacity: 0.5;
+    opacity: 0.55;
   }
   100% {
-    transform: scale(1.18);
+    transform: scale(1.35);
     opacity: 0;
+  }
+}
+
+@keyframes towy-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .rise,
-  .call-ring {
+  .view-enter,
+  .kicker,
+  .line-in,
+  .call-ring,
+  .stagger > *,
+  .skeleton {
     animation: none;
   }
 
   .press:active:not(:disabled) {
     transform: none;
   }
+
+  .map-veil,
+  .press,
+  .back-slot,
+  .chevron,
+  input,
+  textarea {
+    transition: none;
+  }
+
+  .step-live {
+    box-shadow: none;
+  }
 }
 
 .car-map {
+  position: relative;
   height: 22rem;
   overflow: hidden;
   border-radius: 1rem;
   background: #171a20;
+}
+
+.car-map .leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #171a20;
+  font-family: inherit;
 }
 
 .car-map .leaflet-tile-pane {

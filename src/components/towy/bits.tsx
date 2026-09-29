@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { ChevronDown, Star } from "lucide-react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
 import { companyById, usd, type Quote } from "@/lib/towy/model";
 
@@ -31,10 +31,10 @@ export function Choice({
     <button
       type="button"
       aria-pressed={selected}
-      className={`press flex min-h-11 items-center gap-3 border-b border-line py-3 text-left ${selected ? "text-fg" : "text-muted"} ${className}`}
+      className={`press flex min-h-11 items-center gap-3 border-b border-line py-3 text-left transition-colors ${selected ? "text-fg" : "text-muted"} ${className}`}
       {...props}
     >
-      <span className={`h-4 w-px shrink-0 ${selected ? "bg-fg" : "bg-line"}`} aria-hidden="true" />
+      <span className={`h-4 shrink-0 transition-[width,background-color] duration-150 ${selected ? "w-0.5 bg-fg" : "w-px bg-line"}`} aria-hidden="true" />
       <span className="min-w-0">{children}</span>
     </button>
   );
@@ -103,7 +103,10 @@ export function LineItems({ quote }: { quote: Quote }) {
   ].filter(([, amount]) => Number(amount) > 0);
   return (
     <details className="border-t border-line">
-      <summary className="py-2 text-sm text-muted">Line items{company ? ` · ${company.name}` : ""}</summary>
+      <summary className="flex items-center justify-between gap-3 py-2 text-sm text-muted">
+        <span>Line items{company ? ` · ${company.name}` : ""}</span>
+        <ChevronDown className="chevron size-4 shrink-0" aria-hidden="true" />
+      </summary>
       <ul className="pb-2">
         {rows.map(([label, amount]) => (
           <li key={String(label)} className="flex justify-between py-1 text-sm text-muted">
@@ -114,6 +117,20 @@ export function LineItems({ quote }: { quote: Quote }) {
       </ul>
     </details>
   );
+}
+
+export function EmptyState({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
+  return (
+    <div className="border-t border-line py-8">
+      <p className="text-lg font-medium tracking-tight">{title}</p>
+      <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">{body}</p>
+      {children ? <div className="mt-5">{children}</div> : null}
+    </div>
+  );
+}
+
+export function Skeleton({ className = "" }: { className?: string }) {
+  return <div className={`skeleton ${className}`} aria-hidden="true" />;
 }
 
 export function AppleMark({ className = "h-5 w-4" }: { className?: string }) {
@@ -130,22 +147,25 @@ export function AppleMark({ className = "h-5 w-4" }: { className?: string }) {
 export function ApplePayButton({
   label,
   disabled,
+  busy = false,
   onClick,
 }: {
   label: string;
   disabled?: boolean;
+  busy?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
-      disabled={disabled}
+      disabled={disabled || busy}
       onClick={onClick}
-      aria-label={label}
+      aria-label={busy ? "Paying" : label}
+      aria-busy={busy || undefined}
       className="press inline-flex min-h-12 w-full items-center justify-center gap-1.5 rounded-md bg-fg px-4 text-base font-medium text-bg disabled:opacity-40"
     >
       <AppleMark />
-      <span>Pay</span>
+      <span>{busy ? "Paying" : "Pay"}</span>
     </button>
   );
 }
