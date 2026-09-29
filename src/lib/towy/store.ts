@@ -14,6 +14,11 @@ import {
   type Vehicle,
   type View,
   type HelpKind,
+  type PromoPlan,
+  type Promotion,
+  type SavedCar,
+  phoneOk,
+  vehicleOk,
 } from "./model";
 import { listenDesk, pushDesk } from "./firebase";
 
@@ -26,6 +31,8 @@ type Persisted = {
   jobs: Job[];
   reviews: Review[];
   yardId: string;
+  promotions: Promotion[];
+  garage: SavedCar[];
 };
 
 type State = Persisted & {
@@ -63,6 +70,10 @@ type State = Persisted & {
   saveReview: (stars: number, text: string) => void;
   setYard: (yardId: string) => void;
   acceptForYard: (jobId: string) => void;
+  setPromotion: (companyId: string, plan: PromoPlan) => void;
+  clearPromotion: (companyId: string) => void;
+  rememberCar: () => void;
+  useSavedCar: (id: string) => void;
   resetDemo: () => void;
 };
 
@@ -87,6 +98,8 @@ function save(state: State) {
     jobs: state.jobs,
     reviews: state.reviews,
     yardId: state.yardId,
+    promotions: state.promotions,
+    garage: state.garage,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(slice));
   if (!remoteMute) pushDesk(slice);
@@ -101,6 +114,8 @@ function deskFrom(stored: {
   jobs?: unknown[];
   reviews?: unknown[];
   yardId?: string;
+  promotions?: unknown[];
+  garage?: unknown[];
 }): Persisted {
   const storedJobs = (stored.jobs ?? []).filter((job): job is Job => Boolean(job && typeof job === "object" && typeof (job as Job).id === "string")).map(normalizeJob);
   const seen = new Set(storedJobs.map((job) => job.id));
@@ -109,8 +124,20 @@ function deskFrom(stored: {
     if (!seen.has(seed.id)) jobs.unshift(seed);
   }
   const reviews = (stored.reviews ?? []).filter((review): review is Review => Boolean(review && typeof review === "object" && typeof (review as Review).id === "string"));
-  const views: View[] = ["home", "intake", "calling", "quotes", "job", "insurer", "operator"];
+  const views: View[] = ["home", "intake", "calling", "quotes", "job", "insurer", "operator", "promote"];
   const view = views.includes(stored.view as View) ? (stored.view as View) : "home";
+  const plans = new Set(["pin", "first", "both"]);
+  const promotions = (stored.promotions ?? []).filter((item): item is Promotion => {
+    if (!item || typeof item !== "object") return false;
+    const row = item as Promotion;
+    return typeof row.companyId === "string" && plans.has(row.plan);
+  });
+  const drives = new Set(["FWD", "RWD", "AWD", "4WD"]);
+  const garage = (stored.garage ?? []).filter((item): item is SavedCar => {
+    if (!item || typeof item !== "object") return false;
+    const row = item as SavedCar;
+    return typeof row.id === "string" && typeof row.contactName === "string" && typeof row.contactPhone === "string" && Boolean(row.vehicle) && drives.has(row.vehicle.drivetrain);
+  });
   return {
     view,
     step: stored.step ?? 0,
@@ -118,6 +145,8 @@ function deskFrom(stored: {
     jobs,
     reviews,
     yardId: stored.yardId ?? "scioto",
+    promotions,
+    garage,
   };
 }
 
@@ -151,6 +180,8 @@ const initial: Persisted = {
   jobs: seedJobs,
   reviews: [],
   yardId: "scioto",
+  promotions: [],
+  garage: [],
 };
 
 export const useTowy = create<State>((set, get) => ({
@@ -169,7 +200,9 @@ export const useTowy = create<State>((set, get) => ({
         current.activeId === next.activeId &&
         current.yardId === next.yardId &&
         JSON.stringify(current.jobs) === JSON.stringify(next.jobs) &&
-        JSON.stringify(current.reviews) === JSON.stringify(next.reviews)
+        JSON.stringify(current.reviews) === JSON.stringify(next.reviews) &&
+        JSON.stringify(current.promotions) === JSON.stringify(next.promotions) &&
+        JSON.stringify(current.garage) === JSON.stringify(next.garage)
       ) {
         return;
       }
@@ -188,7 +221,7 @@ export const useTowy = create<State>((set, get) => ({
       set({ step: step - 1 });
       return;
     }
-    if (view === "intake" || view === "quotes" || view === "insurer" || view === "operator" || view === "job" || view === "calling") {
+    if (view === "intake" || view === "quotes" || view === "insurer" || view === "operator" || view === "job" || view === "calling" || view === "promote") {
       set({ view: view === "quotes" ? "intake" : "home", step: view === "quotes" ? 4 : 0 });
     }
   },
@@ -198,6 +231,12 @@ export const useTowy = create<State>((set, get) => ({
       job.coverage = lockedCoverage;
       job.coverageLocked = true;
       job.contactName = "Harbor member";
+    }
+    const saved = source === "member" && !lockedCoverage ? get().garage[0] : undefined;
+    if (saved) {
+      job.contactName = saved.contactName;
+      job.contactPhone = saved.contactPhone;
+      job.vehicle = { ...saved.vehicle };
     }
     set({
       jobs: [...get().jobs.filter((item) => item.id !== job.id), job],
@@ -312,7 +351,8 @@ export const useTowy = create<State>((set, get) => ({
     const active = get().jobs.find((job) => job.id === get().activeId);
     if (!active) return;
     const ready = recomputeSituation(active);
-    const calls = buildCalls(ready);
+    const first = get().promotions.find((item) => item.plan === "first" || item.plan === "both");
+    const calls = buildCalls(ready, first?.companyId);
     set({
       jobs: get().jobs.map((job) => (job.id === ready.id ? { ...ready, calls, status: "calling", selectedCompanyId: null, live: null, review: null } : job)),
       view: "calling",
@@ -383,6 +423,39 @@ export const useTowy = create<State>((set, get) => ({
     });
   },
   setYard: (yardId) => set({ yardId }),
+  setPromotion: (companyId, plan) =>
+    set({
+      promotions: [...get().promotions.filter((item) => item.companyId !== companyId), { companyId, plan }],
+    }),
+  clearPromotion: (companyId) => set({ promotions: get().promotions.filter((item) => item.companyId !== companyId) }),
+  rememberCar: () => {
+    const job = get().jobs.find((item) => item.id === get().activeId);
+    if (!job || !vehicleOk(job.vehicle) || !job.contactName.trim() || !phoneOk(job.contactPhone)) return;
+    const id = [job.vehicle.year, job.vehicle.make, job.vehicle.model, job.vehicle.drivetrain]
+      .join("-")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-");
+    const next: SavedCar = {
+      id,
+      contactName: job.contactName.trim(),
+      contactPhone: job.contactPhone.trim(),
+      vehicle: { ...job.vehicle },
+    };
+    set({ garage: [next, ...get().garage.filter((item) => item.id !== id)].slice(0, 4) });
+  },
+  useSavedCar: (id) => {
+    const saved = get().garage.find((item) => item.id === id);
+    if (!saved) return;
+    set({ garage: [saved, ...get().garage.filter((item) => item.id !== id)] });
+    set(
+      withActive(get(), (job) => ({
+        ...job,
+        contactName: saved.contactName,
+        contactPhone: saved.contactPhone,
+        vehicle: { ...saved.vehicle },
+      })),
+    );
+  },
   acceptForYard: (jobId) => {
     const yardId = get().yardId;
     set({
@@ -400,13 +473,18 @@ export const useTowy = create<State>((set, get) => ({
     });
   },
   resetDemo: () => {
+    const garage = get().garage;
     localStorage.removeItem(STORAGE_KEY);
-    set({ ...initial, hydrated: true });
+    set({ ...initial, garage, hydrated: true });
   },
 }));
 
 if (typeof window !== "undefined") {
-  useTowy.subscribe((state) => save(state));
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  useTowy.subscribe((state) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => save(state), 250);
+  });
 }
 
 export function useActiveJob(): Job | null {

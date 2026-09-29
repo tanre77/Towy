@@ -6,6 +6,7 @@ import { useActiveJob, useTowy } from "@/lib/towy/store";
 export function QuotesScreen() {
   const job = useActiveJob();
   const reviews = useTowy((s) => s.reviews);
+  const promotions = useTowy((s) => s.promotions);
   const confirmQuote = useTowy((s) => s.confirmQuote);
   const [picked, setPicked] = useTowyPick();
   const [paying, setPaying] = useState(false);
@@ -48,7 +49,8 @@ export function QuotesScreen() {
       </p>
       {drop ? (
         <p className="mt-2 text-sm text-muted">
-          Drop at {drop.shop.name}, {drop.shop.address}. {drop.shop.rating.toFixed(1)} on Google
+          Drop at {drop.shop.name}, {drop.shop.address}.
+          {drop.shop.rating > 0 ? ` ${drop.shop.rating.toFixed(1)} on Google` : " Nearest tire or repair shop"}
           {drop.miles != null ? `. ${drop.miles.toFixed(1)} mi from this phone.` : "."}
         </p>
       ) : null}
@@ -71,6 +73,7 @@ export function QuotesScreen() {
           if (!quote || !company) return null;
           const score = companyScore(company, reviews);
           const on = selected?.companyId === company.id;
+          const promoted = promotions.some((item) => item.companyId === company.id && (item.plan === "first" || item.plan === "both"));
           return (
             <button
               key={company.id}
@@ -81,6 +84,7 @@ export function QuotesScreen() {
               <span className="flex items-baseline justify-between gap-3">
                 <span>
                   <span className="block text-fg">{company.name}</span>
+                  {promoted ? <span className="mt-1 block text-sm text-muted">Called first</span> : null}
                   <span className="mt-1 flex items-center gap-2 text-sm">
                     <Stars value={score.rating} />
                     <span className="tabular-nums">

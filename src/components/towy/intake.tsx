@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Btn, Choice, Field, TextInput } from "@/components/towy/bits";
 import {
+  carLabel,
   coverageOptions,
   dropFor,
   equipmentLabel,
@@ -54,6 +55,9 @@ export function IntakeScreen() {
   const setDrop = useTowy((s) => s.setDrop);
   const setCoverage = useTowy((s) => s.setCoverage);
   const placeCalls = useTowy((s) => s.placeCalls);
+  const garage = useTowy((s) => s.garage);
+  const rememberCar = useTowy((s) => s.rememberCar);
+  const useSavedCar = useTowy((s) => s.useSavedCar);
   const [locating, setLocating] = useState<"idle" | "searching" | "device" | "denied" | "failed" | "empty">("idle");
   const searchGen = useRef(0);
 
@@ -106,6 +110,7 @@ export function IntakeScreen() {
         <section>
           <h1 className="text-2xl font-medium tracking-tight">What do you need?</h1>
           <p className="mt-2 text-sm text-muted">On the road, or the small jobs that never need a bay.</p>
+          {garage[0] ? <p className="mt-2 text-sm text-muted">{carLabel(garage[0].vehicle)} is saved. Continue skips the vehicle screen.</p> : null}
           <div className="mt-6">
             <p className="mb-1 text-sm text-muted">On the road</p>
             {helpOptions.filter((option) => !atCurb(option.id) && option.id !== "tow").map((option) => (
@@ -135,6 +140,24 @@ export function IntakeScreen() {
         <section>
           <h1 className="text-2xl font-medium tracking-tight">Vehicle</h1>
           <div className="mt-6 space-y-4">
+            {garage.length ? (
+              <div>
+                <p className="mb-2 text-sm font-medium text-muted">Saved</p>
+                {garage.map((car) => (
+                  <Choice
+                    key={car.id}
+                    selected={carLabel(job.vehicle) === carLabel(car.vehicle) && job.contactPhone === car.contactPhone}
+                    onClick={() => useSavedCar(car.id)}
+                  >
+                    <span className="block text-fg">{carLabel(car.vehicle)}</span>
+                    <span className="mt-1 block text-sm text-muted">
+                      {car.contactName} · {car.vehicle.drivetrain}
+                      {car.vehicle.ev ? " · electric" : ""}
+                    </span>
+                  </Choice>
+                ))}
+              </div>
+            ) : null}
             <Field label="Name">
               <TextInput value={job.contactName} onChange={(e) => patchContact({ contactName: e.target.value })} placeholder="Alex Chen" autoComplete="name" />
             </Field>
@@ -205,6 +228,11 @@ export function IntakeScreen() {
       {step === 2 ? (
         <section>
           <h1 className="text-2xl font-medium tracking-tight">{atCurb(job.help) ? "Where it sits" : "Situation"}</h1>
+          {garage.length && vehicleOk(job.vehicle) ? (
+            <button type="button" className="press mt-2 text-sm text-muted" onClick={() => setStep(1)}>
+              {carLabel(job.vehicle)} · different car
+            </button>
+          ) : null}
           <div className="mt-6 space-y-5">
             {atCurb(job.help) ? null : (
               <>
@@ -327,7 +355,9 @@ export function IntakeScreen() {
               {shopDrop ? (
                 <>
                   <p className="mt-1 text-lg font-medium">{shopDrop.shop.name}</p>
-                  <p className="mt-1 text-sm text-muted">{shopDrop.shop.rating.toFixed(1)} on Google</p>
+                  <p className="mt-1 text-sm text-muted">
+                    {shopDrop.shop.rating > 0 ? `${shopDrop.shop.rating.toFixed(1)} on Google` : "Nearest tire or repair shop"}
+                  </p>
                   <p className="mt-1 text-sm text-muted">
                     {shopDrop.shop.address}
                     {shopDrop.miles != null ? ` · ${shopDrop.miles.toFixed(1)} mi from this phone` : " · near this phone"}
@@ -336,11 +366,11 @@ export function IntakeScreen() {
               ) : (
                 <p className="mt-1 text-sm text-muted">
                   {locating === "searching"
-                    ? "Checking Google from this phone."
+                    ? "Looking for a tire or repair shop from this phone."
                     : locating === "denied"
                       ? "Allow location. A saved city is not used."
                       : locating === "failed"
-                        ? "Google didn't answer for this spot."
+                        ? "No shop came back for this spot."
                         : locating === "empty"
                           ? "No tire or repair shop came back for this spot."
                           : "This uses the phone, not a saved place."}
@@ -434,7 +464,18 @@ export function IntakeScreen() {
 
       <div className="mt-8">
         {step < 4 ? (
-          <Btn className="w-full" disabled={(step === 1 && !ready) || (step === 2 && oilOnEv)} onClick={() => setStep(step + 1)}>
+          <Btn
+            className="w-full"
+            disabled={(step === 1 && !ready) || (step === 2 && oilOnEv)}
+            onClick={() => {
+              if (step === 1) rememberCar();
+              if (step === 0 && garage.length && vehicleOk(job.vehicle) && phoneOk(job.contactPhone) && job.contactName.trim()) {
+                setStep(2);
+                return;
+              }
+              setStep(step + 1);
+            }}
+          >
             Continue
           </Btn>
         ) : (

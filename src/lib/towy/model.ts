@@ -21,7 +21,7 @@ export type Equipment = "wheel-lift" | "flatbed";
 export type Traffic = "light" | "moderate" | "heavy";
 export type HelpKind = "tire" | "jump" | "lockout" | "fuel" | "bulb" | "oil" | "wipers" | "crack" | "tow";
 export type JobStatus = "draft" | "calling" | "quoted" | "enroute" | "checked" | "arrived" | "done";
-export type View = "home" | "intake" | "calling" | "quotes" | "job" | "insurer" | "operator";
+export type View = "home" | "intake" | "calling" | "quotes" | "job" | "insurer" | "operator" | "promote";
 
 export type Vehicle = {
   year: string;
@@ -31,6 +31,17 @@ export type Vehicle = {
   tires: string;
   ev: boolean;
 };
+
+export type SavedCar = {
+  id: string;
+  contactName: string;
+  contactPhone: string;
+  vehicle: Vehicle;
+};
+
+export function carLabel(vehicle: Vehicle): string {
+  return [vehicle.year, vehicle.make, vehicle.model].filter((part) => part.trim()).join(" ");
+}
 
 export type Situation = {
   starts: boolean;
@@ -179,6 +190,8 @@ export type Company = {
   name: string;
   phone: string;
   yard: string;
+  lat: number;
+  lng: number;
   rating: number;
   reviewCount: number;
   tags: string[];
@@ -292,6 +305,8 @@ export const companies: Company[] = [
     name: "Scioto Hook & Haul",
     phone: "(614) 555-0142",
     yard: "Franklinton",
+    lat: 39.9574,
+    lng: -83.0178,
     rating: 4.7,
     reviewCount: 312,
     tags: ["Wheel-lift", "Flatbed"],
@@ -315,6 +330,8 @@ export const companies: Company[] = [
     name: "Olentangy Recovery",
     phone: "(614) 555-0177",
     yard: "Clintonville",
+    lat: 40.0315,
+    lng: -83.0208,
     rating: 4.5,
     reviewCount: 188,
     tags: ["Winch", "Off-road"],
@@ -338,6 +355,8 @@ export const companies: Company[] = [
     name: "OuterBelt Tow",
     phone: "(614) 555-0108",
     yard: "Easton",
+    lat: 40.0506,
+    lng: -82.9154,
     rating: 4.8,
     reviewCount: 540,
     tags: ["Light duty", "Fast"],
@@ -361,6 +380,8 @@ export const companies: Company[] = [
     name: "North Bank Flatbeds",
     phone: "(614) 555-0164",
     yard: "Italian Village",
+    lat: 39.9808,
+    lng: -82.9974,
     rating: 4.6,
     reviewCount: 96,
     tags: ["EV certified", "Flatbed"],
@@ -384,6 +405,8 @@ export const companies: Company[] = [
     name: "Parsons Night Shift",
     phone: "(614) 555-0190",
     yard: "South Side",
+    lat: 39.9392,
+    lng: -82.9836,
     rating: 4.2,
     reviewCount: 74,
     tags: ["After hours", "Budget"],
@@ -606,9 +629,20 @@ function quoteFor(company: Company, job: Job): Quote {
   };
 }
 
-export function buildCalls(job: Job): CallResult[] {
+export type PromoPlan = "pin" | "first" | "both";
+
+export type Promotion = { companyId: string; plan: PromoPlan };
+
+export const promoPlans: { id: PromoPlan; title: string; price: string; detail: string }[] = [
+  { id: "pin", title: "On the map", price: "$49 a week", detail: "A pin beside the car. Drivers see the shop before they ask for help." },
+  { id: "first", title: "Called first", price: "$12 a stop", detail: "When someone nearby needs a truck, this shop is the first call." },
+  { id: "both", title: "Map and first call", price: "$49 a week, $12 a stop", detail: "The pin, and the first call. The stop fee is only when they get the job." },
+];
+
+export function buildCalls(job: Job, firstId?: string | null): CallResult[] {
   const ready = recomputeSituation(job);
   const ranked = [...companies].sort((a, b) => (a.miles[ready.locationId] ?? 99) - (b.miles[ready.locationId] ?? 99));
+  if (firstId) ranked.sort((a, b) => (a.id === firstId ? -1 : b.id === firstId ? 1 : 0));
   const results: CallResult[] = [];
   for (const company of ranked) {
     const shop = needsShop(ready);
@@ -654,7 +688,7 @@ export function callLines(company: Company, job: Job, result: CallResult): strin
       : `${workLabel(job)}. On the shoulder, not a shop. ${quote.etaMin} minutes.`;
   const drop = dropFor(job);
   const dest = drop
-    ? `Drop at ${drop.shop.name}, ${drop.shop.address}. ${drop.shop.rating.toFixed(1)} on Google${drop.miles != null ? `, ${drop.miles.toFixed(1)} miles from this phone` : ""}.`
+    ? `Drop at ${drop.shop.name}, ${drop.shop.address}.${drop.shop.rating > 0 ? ` ${drop.shop.rating.toFixed(1)} on Google` : ""}${drop.miles != null ? ` ${drop.miles.toFixed(1)} miles from this phone` : ""}.`
     : null;
   return [...open, ask, `Estimate ${usd(quote.total)}. ${quote.note}`, ...(dest ? [dest] : [])];
 }

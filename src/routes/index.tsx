@@ -6,6 +6,7 @@ import { InsurerScreen } from "@/components/towy/insurer";
 import { IntakeScreen } from "@/components/towy/intake";
 import { JobScreen } from "@/components/towy/job";
 import { OperatorScreen } from "@/components/towy/operator";
+import { PromoteScreen } from "@/components/towy/promote";
 import { QuotesScreen } from "@/components/towy/quotes";
 import { useTowy } from "@/lib/towy/store";
 
@@ -22,6 +23,7 @@ function Page() {
       {view === "job" ? <JobScreen /> : null}
       {view === "insurer" ? <InsurerScreen /> : null}
       {view === "operator" ? <OperatorScreen /> : null}
+      {view === "promote" ? <PromoteScreen /> : null}
     </Frame>
   );
 }

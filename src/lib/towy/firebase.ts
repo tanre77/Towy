@@ -1,6 +1,4 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously } from "firebase/auth";
-import { addDoc, collection, doc, initializeFirestore, onSnapshot, setDoc, type Firestore } from "firebase/firestore";
+import type { Firestore } from "firebase/firestore";
 
 declare global {
   interface ImportMetaEnv {
@@ -20,6 +18,8 @@ export type DeskRecord = {
   jobs: unknown[];
   reviews: unknown[];
   yardId: string;
+  promotions: unknown[];
+  garage: unknown[];
 };
 
 const DESK_DOC = ["desks", "member"] as const;
@@ -39,17 +39,38 @@ export function firebaseReady(): boolean {
   return config() !== null;
 }
 
-let opening: Promise<Firestore | null> | null = null;
+type DeskApi = {
+  db: Firestore;
+  setDoc: typeof import("firebase/firestore").setDoc;
+  doc: typeof import("firebase/firestore").doc;
+  onSnapshot: typeof import("firebase/firestore").onSnapshot;
+  addDoc: typeof import("firebase/firestore").addDoc;
+  collection: typeof import("firebase/firestore").collection;
+};
 
-function openFirebase(): Promise<Firestore | null> {
+let opening: Promise<DeskApi | null> | null = null;
+
+function openFirebase(): Promise<DeskApi | null> {
   if (!firebaseReady()) return Promise.resolve(null);
   if (!opening) {
     opening = (async () => {
       const appConfig = config();
       if (!appConfig) return null;
+      const [{ initializeApp }, { getAuth, signInAnonymously }, firestore] = await Promise.all([
+        import("firebase/app"),
+        import("firebase/auth"),
+        import("firebase/firestore"),
+      ]);
       const app = initializeApp(appConfig);
       await signInAnonymously(getAuth(app));
-      return initializeFirestore(app, { ignoreUndefinedProperties: true });
+      return {
+        db: firestore.initializeFirestore(app, { ignoreUndefinedProperties: true }),
+        setDoc: firestore.setDoc,
+        doc: firestore.doc,
+        onSnapshot: firestore.onSnapshot,
+        addDoc: firestore.addDoc,
+        collection: firestore.collection,
+      };
     })().catch(() => null);
   }
   return opening;
@@ -64,8 +85,8 @@ export function pushDesk(desk: DeskRecord) {
   if (flushRunning) return;
   flushRunning = true;
   void (async () => {
-    const db = await openFirebase();
-    if (!db) {
+    const api = await openFirebase();
+    if (!api) {
       pending = null;
       flushRunning = false;
       return;
@@ -73,7 +94,7 @@ export function pushDesk(desk: DeskRecord) {
     while (pending) {
       const next = pending;
       pending = null;
-      await setDoc(doc(db, DESK_DOC[0], DESK_DOC[1]), { ...next, updatedAt: Date.now() });
+      await api.setDoc(api.doc(api.db, DESK_DOC[0], DESK_DOC[1]), { ...next, updatedAt: Date.now() });
     }
     flushRunning = false;
     if (pending) pushDesk(pending);
@@ -84,9 +105,9 @@ export function listenDesk(onDesk: (desk: DeskRecord) => void): () => void {
   if (!firebaseReady()) return () => {};
   let stop = () => {};
   let cancelled = false;
-  void openFirebase().then((db) => {
-    if (!db || cancelled) return;
-    stop = onSnapshot(doc(db, DESK_DOC[0], DESK_DOC[1]), (snap) => {
+  void openFirebase().then((api) => {
+    if (!api || cancelled) return;
+    stop = api.onSnapshot(api.doc(api.db, DESK_DOC[0], DESK_DOC[1]), (snap) => {
       if (!snap.exists()) return;
       const data = snap.data();
       onDesk({
@@ -96,6 +117,8 @@ export function listenDesk(onDesk: (desk: DeskRecord) => void): () => void {
         jobs: Array.isArray(data.jobs) ? data.jobs : [],
         reviews: Array.isArray(data.reviews) ? data.reviews : [],
         yardId: typeof data.yardId === "string" ? data.yardId : "scioto",
+        promotions: Array.isArray(data.promotions) ? data.promotions : [],
+        garage: Array.isArray(data.garage) ? data.garage : [],
       });
     });
   });
@@ -123,9 +146,9 @@ export function watchCrashes() {
 async function reportCrash(message: string, stack?: string) {
   const text = message.trim();
   if (!text) return;
-  const db = await openFirebase();
-  if (!db) return;
-  await addDoc(collection(db, "crashes"), {
+  const api = await openFirebase();
+  if (!api) return;
+  await api.addDoc(api.collection(api.db, "crashes"), {
     message: text.slice(0, 500),
     stack: stack?.slice(0, 4000) ?? "",
     at: Date.now(),

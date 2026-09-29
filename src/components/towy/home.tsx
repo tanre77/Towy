@@ -1,36 +1,60 @@
+import { useEffect, useState } from "react";
 import { Btn } from "@/components/towy/bits";
-import { companyById, locations, pilotMonth, trafficLabel, usd } from "@/lib/towy/model";
+import { CarMap } from "@/components/towy/map";
+import { companies, companyById, locations, pilotMonth, usd } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
 export function HomeScreen() {
   const setView = useTowy((s) => s.setView);
   const startJob = useTowy((s) => s.startJob);
   const resetDemo = useTowy((s) => s.resetDemo);
+  const promotions = useTowy((s) => s.promotions);
   const job = useActiveJob();
   const resume = job && job.status !== "draft" ? job : null;
   const yard = resume?.selectedCompanyId ? companyById(resume.selectedCompanyId) : undefined;
   const quote = resume?.calls.find((call) => call.companyId === resume.selectedCompanyId)?.quote;
-
   const here = locations[0];
+  const [car, setCar] = useState({ lat: here.lat, lng: here.lng, device: false });
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setCar({ lat: pos.coords.latitude, lng: pos.coords.longitude, device: true }),
+      () => undefined,
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 },
+    );
+  }, []);
+
+  const pins = promotions
+    .filter((item) => item.plan === "pin" || item.plan === "both")
+    .map((item) => companies.find((company) => company.id === item.companyId))
+    .filter((company) => company != null)
+    .map((company) => ({ id: company.id, name: company.name, lat: company.lat, lng: company.lng }));
 
   return (
     <div className="rise flex flex-1 flex-col">
-      <section className="rounded-xl bg-surface p-4">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-muted">
-              {here.road} {here.direction.toLowerCase()}
-            </p>
-            <h1 className="mt-2 text-5xl font-medium leading-none tabular-nums">{here.mile}</h1>
-            <p className="mt-2 text-sm text-muted">{here.place}</p>
-            <p className="mt-3 text-sm text-muted">A headlight, an oil change, a cracked or smashed window, or a tow if it has to move.</p>
-          </div>
-          <p className="rounded-md bg-bg px-2.5 py-1 text-sm text-muted">{trafficLabel(here.traffic)}</p>
-        </div>
-        <Btn className="mt-5 w-full" onClick={() => startJob("member")}>
-          I need help
-        </Btn>
-      </section>
+      <CarMap car={car} pins={pins} />
+      <div className="mt-3 flex items-baseline justify-between gap-3">
+        <p className="text-sm text-muted">{car.device ? "Your car" : `${here.road} ${here.mile}, until this phone shares where the car is`}</p>
+        {!car.device ? (
+          <button
+            type="button"
+            className="press text-sm text-fg"
+            onClick={() => {
+              navigator.geolocation?.getCurrentPosition(
+                (pos) => setCar({ lat: pos.coords.latitude, lng: pos.coords.longitude, device: true }),
+                () => undefined,
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 },
+              );
+            }}
+          >
+            Use this phone
+          </button>
+        ) : null}
+      </div>
+      <Btn className="mt-4 w-full" onClick={() => startJob("member")}>
+        I need help
+      </Btn>
 
       {resume ? (
         <button
@@ -50,6 +74,10 @@ export function HomeScreen() {
       ) : null}
 
       <div className={resume ? "" : "mt-6"}>
+        <button type="button" onClick={() => setView("promote")} className="press flex w-full items-baseline justify-between border-b border-line py-4 text-left">
+          <span>Promote a shop</span>
+          <span className="text-sm text-muted">{promotions.length ? `${promotions.length} on` : "From $49"}</span>
+        </button>
         <button type="button" onClick={() => setView("insurer")} className="press flex w-full items-baseline justify-between border-b border-line py-4 text-left">
           <span>Carrier book</span>
           <span className="text-sm tabular-nums text-muted">{usd(pilotMonth().total)}</span>
@@ -59,16 +87,6 @@ export function HomeScreen() {
           <span className="text-sm text-muted">5 shops</span>
         </button>
       </div>
-
-      <ul className="mt-8 lg:hidden">
-        {locations.map((item) => (
-          <li key={item.id} className="flex items-baseline justify-between gap-3 border-t border-line py-3">
-            <span className="text-sm">{item.road}</span>
-            <span className="text-lg font-medium tabular-nums">{item.mile}</span>
-            <span className="text-right text-sm text-muted">{trafficLabel(item.traffic)}</span>
-          </li>
-        ))}
-      </ul>
       <button type="button" onClick={resetDemo} className="mt-8 self-start text-sm text-subtle">
         Reset
       </button>
