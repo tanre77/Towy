@@ -3,7 +3,6 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var desk: Desk
 
-    private var here: Place { TowyMath.places[0] }
     private var resume: Job? {
         guard let job = desk.active, job.status != .draft else { return nil }
         return job
@@ -13,27 +12,17 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("\(here.road) \(here.direction.lowercased())")
-                                .font(.subheadline)
-                                .foregroundStyle(TowyColor.muted)
-                            Text(here.mile)
-                                .font(.system(size: 48, weight: .medium))
-                                .monospacedDigit()
-                            Text(here.place)
-                                .font(.subheadline)
-                                .foregroundStyle(TowyColor.muted)
-                        }
-                        Spacer()
-                        Text(TowyMath.trafficLabel(here.traffic))
-                            .font(.subheadline)
-                            .foregroundStyle(TowyColor.muted)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(TowyColor.asphalt, in: RoundedRectangle(cornerRadius: 8))
-                    }
-                    PrimaryButton(title: "I need a tow") {
+                    Text("Roadside, the way a ride works.")
+                        .font(.subheadline)
+                        .foregroundStyle(TowyColor.muted)
+                    Text("A truck comes to the car.")
+                        .font(.title2.weight(.medium))
+                        .padding(.top, 4)
+                    Text("Pick the job. You see the minutes and the price before anyone rolls.")
+                        .font(.subheadline)
+                        .foregroundStyle(TowyColor.muted)
+                        .padding(.top, 8)
+                    PrimaryButton(title: "Request a truck") {
                         desk.startJob()
                     }
                     .padding(.top, 20)
@@ -47,7 +36,7 @@ struct HomeView: View {
                     } label: {
                         HStack(alignment: .firstTextBaseline) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Open stop").font(.subheadline).foregroundStyle(TowyColor.muted)
+                                Text("Your truck").font(.subheadline).foregroundStyle(TowyColor.muted)
                                 Text(resumeLine(resume)).foregroundStyle(TowyColor.paper)
                             }
                             Spacer()

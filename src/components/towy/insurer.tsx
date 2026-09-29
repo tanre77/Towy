@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Btn, Split } from "@/components/towy/bits";
 import { applySample, blankJob, buildCalls, DISPATCH_FEE, pilotMonth, usd } from "@/lib/towy/model";
+import { ReferLink } from "@/components/towy/refer";
 import { useTowy } from "@/lib/towy/store";
 
 export function InsurerScreen() {
@@ -37,6 +38,7 @@ export function InsurerScreen() {
         <Btn className="mt-4 w-full" onClick={() => startJob("insurer", "full")}>
           Open a covered stop
         </Btn>
+        <ReferLink />
       </div>
     </div>
   );

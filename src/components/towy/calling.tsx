@@ -43,9 +43,9 @@ export function CallingScreen() {
   if (calls.length === 0) {
     return (
       <div className="rise flex flex-1 flex-col justify-center">
-        <EmptyState title="No shops in range" body="Nothing covers this mile with the equipment on the stop. Change the stop and call again.">
+        <EmptyState title="No trucks in range" body="Nothing covers this mile with the equipment on the request. Change where the car is and try again.">
           <Btn variant="line" onClick={() => useTowy.setState({ view: "intake", step: 3 })}>
-            Back to the stop
+            Back to the car
           </Btn>
         </EmptyState>
       </div>
@@ -55,12 +55,12 @@ export function CallingScreen() {
   if (done || !current || !company) {
     return (
       <div className="rise flex flex-1 flex-col pt-8" aria-busy="true" aria-live="polite">
-        <p className="text-sm text-muted">Writing the estimates</p>
+        <p className="text-sm text-muted">Writing what each truck can do</p>
         <Skeleton className="mt-4 h-8 w-40" />
         <Skeleton className="mt-6 h-16 w-full" />
         <Skeleton className="mt-3 h-16 w-full" />
         <Btn className="mt-auto w-full" variant="line" onClick={() => finish(job.id)}>
-          See estimates
+          See the trucks
         </Btn>
       </div>
     );
@@ -72,7 +72,7 @@ export function CallingScreen() {
   return (
     <div className="rise flex flex-1 flex-col pt-6">
       <p key={phase} className="line-in text-sm text-muted">
-        {phase === "dial" ? "Ringing" : current.available ? "Connected" : "Declined"} · {Math.min(index + 1, calls.length)} / {calls.length}
+        Finding a truck · {phase === "dial" ? "ringing" : current.available ? "they can take it" : "they declined"} · {Math.min(index + 1, calls.length)} / {calls.length}
       </p>
       <h1 className="screen-title mt-2 text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>
         {company.name}
@@ -100,7 +100,7 @@ export function CallingScreen() {
         </p>
       ) : null}
       <Btn className="mt-auto w-full" variant="line" onClick={() => finish(job.id)}>
-        Skip to estimates
+        See the trucks
       </Btn>
     </div>
   );

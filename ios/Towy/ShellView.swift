@@ -5,11 +5,11 @@ struct ShellView: View {
 
     private var kicker: String {
         switch desk.screen {
-        case .home: "Columbus"
+        case .home: "Roadside"
         case .intake: "\(desk.step + 1) / 4"
-        case .calling: "Calling"
-        case .quotes: "Estimates"
-        case .job: "Stop"
+        case .calling: "Matching"
+        case .quotes: "Trucks"
+        case .job: "On the way"
         case .insurer: "Insurers"
         case .partner: "Shops"
         }

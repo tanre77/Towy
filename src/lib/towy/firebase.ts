@@ -20,6 +20,8 @@ export type DeskRecord = {
   yardId: string;
   promotions: unknown[];
   garage: unknown[];
+  profiles: unknown[];
+  activeUserId: string | null;
 };
 
 const DESK_DOC = ["desks", "member"] as const;
@@ -119,6 +121,8 @@ export function listenDesk(onDesk: (desk: DeskRecord) => void): () => void {
         yardId: typeof data.yardId === "string" ? data.yardId : "scioto",
         promotions: Array.isArray(data.promotions) ? data.promotions : [],
         garage: Array.isArray(data.garage) ? data.garage : [],
+        profiles: Array.isArray(data.profiles) ? data.profiles : [],
+        activeUserId: typeof data.activeUserId === "string" ? data.activeUserId : null,
       });
     });
   });

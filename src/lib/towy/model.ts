@@ -21,7 +21,7 @@ export type Equipment = "wheel-lift" | "flatbed";
 export type Traffic = "light" | "moderate" | "heavy";
 export type HelpKind = "tire" | "jump" | "lockout" | "fuel" | "bulb" | "oil" | "wipers" | "crack" | "tow";
 export type JobStatus = "draft" | "calling" | "quoted" | "enroute" | "checked" | "arrived" | "done";
-export type View = "home" | "intake" | "calling" | "quotes" | "job" | "insurer" | "operator" | "promote";
+export type View = "home" | "intake" | "calling" | "quotes" | "job" | "insurer" | "operator" | "promote" | "profile" | "refer";
 
 export type Vehicle = {
   year: string;
@@ -53,6 +53,18 @@ export type SavedCar = {
   contactPhone: string;
   vehicle: Vehicle;
 };
+
+export type MemberProfile = {
+  userId: string;
+  name: string;
+  phone: string;
+  place: string;
+  vehicle: Vehicle;
+};
+
+export function memberCar(): Vehicle {
+  return { year: "2019", make: "Honda", model: "Civic", drivetrain: "FWD", tires: "215/55R16", ev: false, color: "black", plate: "" };
+}
 
 export function carLabel(vehicle: Vehicle): string {
   return [vehicle.year, vehicle.make, vehicle.model].filter((part) => part.trim()).join(" ");
@@ -134,11 +146,12 @@ export type Job = {
   status: JobStatus;
   live: { etaMin: number; total: number; note: string } | null;
   review: { stars: number; text: string } | null;
-  payment?: { method: "apple-pay"; amount: number } | null;
+  payment?: { method: "apple-pay" | "held"; amount: number; credit?: number } | null;
   source: "member" | "insurer" | "seed";
   origin: { lat: number; lng: number; source: "device" | "mile" } | null;
   drop: { shop: DropShop; miles: number | null } | null;
   acceptedAt: number | null;
+  accountId: string | null;
 };
 
 export function atCurb(help: HelpKind): boolean {
@@ -782,6 +795,7 @@ export function blankJob(source: Job["source"] = "member"): Job {
     origin: null,
     drop: null,
     acceptedAt: null,
+    accountId: null,
   });
 }
 

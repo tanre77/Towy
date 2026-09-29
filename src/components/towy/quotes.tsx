@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ApplePayButton, Btn, EmptyState, LineItems, Split, Stars } from "@/components/towy/bits";
-import { atCurb, companyById, companyScore, dropFor, needsShop, equipmentLabel, usd, workLabel } from "@/lib/towy/model";
+import { atCurb, companyById, companyScore, dropFor, needsShop, equipmentLabel, round2, usd, workLabel } from "@/lib/towy/model";
+import { referralSummary } from "@/lib/towy/accounts";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
 export function QuotesScreen() {
@@ -8,6 +9,8 @@ export function QuotesScreen() {
   const reviews = useTowy((s) => s.reviews);
   const promotions = useTowy((s) => s.promotions);
   const confirmQuote = useTowy((s) => s.confirmQuote);
+  const session = useTowy((s) => s.session);
+  const tick = useTowy((s) => s.referralTick);
   const [picked, setPicked] = useTowyPick();
   const [paying, setPaying] = useState(false);
 
@@ -18,6 +21,10 @@ export function QuotesScreen() {
   const selected = quotes.find((call) => call.companyId === picked) ?? quotes[0];
   const share = selected?.quote?.driverPays ?? 0;
   const covered = selected?.quote?.covered ?? 0;
+  const held = session ? referralSummary(session.id).held : 0;
+  void tick;
+  const credit = share > 0 ? round2(Math.min(held, share)) : 0;
+  const due = round2(Math.max(0, share - credit));
 
   function confirmFree() {
     if (!selected?.quote) return;
@@ -28,25 +35,30 @@ export function QuotesScreen() {
     if (!selected?.quote || paying) return;
     setPaying(true);
     window.setTimeout(() => {
-      confirmQuote(selected.companyId, { method: "apple-pay", amount: share });
+      confirmQuote(selected.companyId, { method: "apple-pay", amount: due, credit });
     }, 700);
+  }
+
+  function useHeld() {
+    if (!selected?.quote || paying) return;
+    confirmQuote(selected.companyId, { method: "held", amount: credit, credit });
   }
 
   return (
     <div className="rise flex flex-1 flex-col">
       <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>
-        Estimates
+        Choose a truck
       </h1>
       <p className="mt-2 text-sm text-muted">
         {needsShop(job) ? (
           <>
             {equipmentLabel(job.situation.equipment)}
-            {job.situation.winch ? ", winch" : ""}. Nearest shop that can take it.
+            {job.situation.winch ? ", winch" : ""}. Nearest truck that can take the car.
           </>
         ) : atCurb(job.help) ? (
-          <>{workLabel(job)}. Where the car is parked. No shop.</>
+          <>{workLabel(job)}. They come to where the car is parked.</>
         ) : (
-          <>{workLabel(job)}. Done on the shoulder. Nearest truck that can take it.</>
+          <>{workLabel(job)}. Done where the car sits. Nearest truck first.</>
         )}
       </p>
       {drop ? (
@@ -70,9 +82,9 @@ export function QuotesScreen() {
       ) : null}
       <div className="stagger mt-6">
         {quotes.length === 0 ? (
-          <EmptyState title="No shop could take this stop" body="Nothing answered for this mile and equipment. Change the stop and call again.">
+          <EmptyState title="No truck could take this" body="Nothing answered for this mile and equipment. Change where the car is and try again.">
             <Btn variant="line" onClick={() => useTowy.setState({ view: "intake", step: 3 })}>
-              Change the stop
+              Change where the car is
             </Btn>
           </EmptyState>
         ) : null}
@@ -119,21 +131,31 @@ export function QuotesScreen() {
       ) : null}
       {selected?.quote && share === 0 ? (
         <div className="mt-6">
-          <p className="text-sm text-muted">Insurance covers the service. Nothing to charge.</p>
+          <p className="text-sm text-muted">Insurance covers it. Nothing to pay. The truck rolls when you send it.</p>
           <Btn className="mt-3 w-full" onClick={confirmFree}>
-            Confirm this shop
+            Send this truck
           </Btn>
         </div>
       ) : null}
-      {selected?.quote && share > 0 ? (
+      {selected?.quote && share > 0 && due === 0 ? (
+        <div className="mt-6">
+          <p className="text-sm text-muted">Held from referrals covers this service. Nothing else to pay.</p>
+          <p className="mt-1 text-2xl font-medium tabular-nums">{usd(credit)}</p>
+          <Btn className="mt-3 w-full" onClick={useHeld}>
+            Use held funds
+          </Btn>
+        </div>
+      ) : null}
+      {selected?.quote && due > 0 ? (
         <div className="rise sticky bottom-4 z-10 mt-4 rounded-xl bg-surface p-4">
-          <p className="text-sm text-muted">Your share of the service</p>
-          <p className="mt-1 text-2xl font-medium tabular-nums">{usd(share)}</p>
+          <p className="text-sm text-muted">You pay this. Then the truck rolls.</p>
+          <p className="mt-1 text-2xl font-medium tabular-nums">{usd(due)}</p>
           <p className="mt-2 text-sm text-muted">
-            {covered > 0 ? `Insurance covers ${usd(covered)} and is not charged here.` : "No insurance on this stop, so the whole tow is yours."}
+            {credit > 0 ? `Held referrals cover ${usd(credit)}. ` : ""}
+            {covered > 0 ? `Insurance covers ${usd(covered)} and is not charged here.` : credit > 0 ? "The rest is yours." : "No insurance on this stop, so the whole tow is yours."}
           </p>
           <div className="mt-4">
-            <ApplePayButton label={`Pay ${usd(share)} with Apple Pay`} busy={paying} onClick={pay} />
+            <ApplePayButton label={`Pay ${usd(due)} with Apple Pay`} busy={paying} onClick={pay} />
           </div>
         </div>
       ) : null}

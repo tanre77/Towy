@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { Btn, LineItems, Split, Stars } from "@/components/towy/bits";
 import { CarMap, useTruckSpot } from "@/components/towy/map";
-import { companyById, dropFor, locationById, usd } from "@/lib/towy/model";
+import { companyById, locationById, usd } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
 const steps = [
-  { id: "enroute", label: "Truck rolling" },
-  { id: "checked", label: "Halfway check-in" },
-  { id: "arrived", label: "On scene" },
-  { id: "done", label: "Closed" },
+  { id: "enroute", label: "On the way" },
+  { id: "checked", label: "Checked in" },
+  { id: "arrived", label: "At the car" },
+  { id: "done", label: "Done" },
 ] as const;
 
 function stepIndex(status: string) {
@@ -37,7 +37,6 @@ export function JobScreen() {
   const company = job.selectedCompanyId ? companyById(job.selectedCompanyId) : undefined;
   const quote = job.calls.find((call) => call.companyId === job.selectedCompanyId)?.quote;
   const location = locationById(job.locationId);
-  const drop = dropFor(job);
   const truck = useTruckSpot(job);
   const spot = job.origin ?? location;
   const liveEta = truck ? truck.leftMin : (job.live?.etaMin ?? quote?.etaMin ?? 0);
@@ -58,22 +57,23 @@ export function JobScreen() {
         pins={[]}
         truck={truck ? { lat: truck.lat, lng: truck.lng } : null}
       />
-      <p className="mt-3 text-sm text-muted">
-        {location.road} mile {location.mile} · {location.place}
-        {drop ? ` · ${drop.shop.name}` : ""}
-      </p>
+      <p className="mt-3 text-sm text-muted">Your truck · {location.road} mile {location.mile}</p>
       <h1 className="screen-title mt-2 text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>
-        {company?.name ?? "Shop confirmed"}
+        {company?.name ?? "Truck confirmed"}
       </h1>
       <p className="mt-4 font-display text-6xl leading-none tabular-nums">{liveEta === 0 ? "Here" : liveEta}</p>
-      <p className="mt-1 text-sm text-muted">{liveEta === 0 ? "" : "minutes"}</p>
+      <p className="mt-1 text-sm text-muted">{liveEta === 0 ? "At the car" : "minutes away"}</p>
       <p key={calling ? "calling" : (job.live?.note ?? "rolling")} className="line-in mt-2 text-sm text-muted" aria-live="polite">
-        {calling ? `Calling ${company?.name ?? "the shop"} for a live update.` : (job.live?.note ?? "Truck is rolling.")}
+        {calling ? `Calling ${company?.name ?? "the truck"} for a live update.` : (job.live?.note ?? "On the way to the car.")}
       </p>
       {quote ? <p className="mt-2 text-sm tabular-nums text-muted">Quote held at {usd(job.live?.total ?? quote.total)}</p> : null}
+      {job.payment?.method === "apple-pay" && job.payment.credit ? (
+        <p className="mt-2 text-sm text-muted">Held referrals covered {usd(job.payment.credit)}.</p>
+      ) : null}
       {job.payment?.method === "apple-pay" ? (
         <p className="mt-2 text-sm text-muted">Paid {usd(job.payment.amount)} with Apple Pay. Insurance was not charged.</p>
       ) : null}
+      {job.payment?.method === "held" ? <p className="mt-2 text-sm text-muted">Paid from funds held for referrals. Insurance was not charged.</p> : null}
 
       <ol className="mt-6 border-t border-line">
         {steps.map((step, index) => {

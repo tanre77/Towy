@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useLayoutEffect } from "react";
 import { companyById, equipmentLabel, locationById, locations, trafficLabel, usd } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
+import { deskFor } from "@/lib/towy/accounts";
 import { watchCrashes } from "@/lib/towy/firebase";
 
 export function Frame({ children }: { children: ReactNode }) {
@@ -12,6 +13,9 @@ export function Frame({ children }: { children: ReactNode }) {
   const step = useTowy((s) => s.step);
   const back = useTowy((s) => s.back);
   const setView = useTowy((s) => s.setView);
+  const session = useTowy((s) => s.session);
+  const signOutAccount = useTowy((s) => s.signOutAccount);
+  const home = session ? deskFor(session.role) : "home";
 
   useLayoutEffect(() => {
     hydrate();
@@ -24,23 +28,28 @@ export function Frame({ children }: { children: ReactNode }) {
     document.querySelector<HTMLElement>("[data-screen-title]")?.focus({ preventScroll: true });
   }, [view, step]);
 
-  const showBack = view !== "home";
-  const kicker =
-    view === "home"
-      ? "Columbus"
+  const showBack = Boolean(session) && view !== home;
+  const kicker = !session
+    ? "Account"
+    : view === "home"
+      ? "Roadside"
       : view === "intake"
         ? `${step + 1} / 5`
         : view === "calling"
-          ? "Calling"
+          ? "Matching"
           : view === "quotes"
-            ? "Estimates"
+            ? "Trucks"
             : view === "job"
-              ? "Stop"
+              ? "On the way"
               : view === "insurer"
                 ? "Invoice"
                 : view === "promote"
                   ? "Promote"
-                  : "Shops";
+                  : view === "profile"
+                    ? "Profile"
+                    : view === "refer"
+                      ? "Refer"
+                      : "Shops";
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-6xl lg:gap-16 lg:px-8">
@@ -60,19 +69,26 @@ export function Frame({ children }: { children: ReactNode }) {
                 <ArrowLeft className="size-5" />
               </button>
             </div>
-            <button type="button" onClick={() => setView("home")} className="flex items-center gap-2">
+            <button type="button" onClick={() => session && setView(home)} className="flex items-center gap-2">
               <Mark className="size-8" />
               <span className="text-base font-semibold tracking-tight">shoulder</span>
             </button>
           </div>
-          <p key={kicker} className="kicker text-sm text-muted">
-            {kicker}
-          </p>
+          <div className="text-right">
+            <p key={kicker} className="kicker text-sm text-muted">
+              {kicker}
+            </p>
+            {session ? (
+              <button type="button" onClick={signOutAccount} className="press mt-1 text-sm text-subtle">
+                Sign out
+              </button>
+            ) : null}
+          </div>
         </header>
         <div className="safe-b flex flex-1 flex-col px-5">{children}</div>
       </div>
       <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 py-8 lg:block">
-        <p className="text-sm text-muted">Corridor</p>
+        <p className="text-sm text-muted">Trucks cover these miles</p>
         <ul className="mt-3">
           {locations.map((item) => (
             <li key={item.id} className="flex items-baseline justify-between border-t border-line py-3">

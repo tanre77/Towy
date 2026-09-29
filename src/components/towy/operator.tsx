@@ -1,5 +1,6 @@
 import { Btn, EmptyState } from "@/components/towy/bits";
 import { companies, companyById, equipmentLabel, locationById, positionLabel, usd, type Job } from "@/lib/towy/model";
+import { ReferLink } from "@/components/towy/refer";
 import { useTowy } from "@/lib/towy/store";
 
 const statusLabel: Record<Job["status"], string> = {
@@ -81,6 +82,7 @@ export function OperatorScreen() {
               {job.payment?.method === "apple-pay" ? (
                 <p className="mt-2 text-sm text-muted">Member paid {usd(job.payment.amount)} with Apple Pay.</p>
               ) : null}
+              {job.payment?.method === "held" ? <p className="mt-2 text-sm text-muted">Member paid from held referral funds.</p> : null}
               {takenBy ? (
                 <p className="mt-3 text-sm text-muted">Taken by {takenBy.name}.</p>
               ) : quote ? (
@@ -136,6 +138,7 @@ export function OperatorScreen() {
           );
         })}
       </div>
+      <ReferLink />
       <button type="button" onClick={() => setView("insurer")} className="press mt-6 inline-flex min-h-11 items-center self-start text-sm text-muted">
         See insurer pricing
       </button>

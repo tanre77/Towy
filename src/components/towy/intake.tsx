@@ -8,6 +8,7 @@ import {
   equipmentLabel,
   equipmentReason,
   helpOptions,
+  helpLabel,
   atCurb,
   locations,
   needsShop,
@@ -17,7 +18,6 @@ import {
   sideLabel,
   trafficLabel,
   vehicleOk,
-  vehiclePresets,
   winchReason,
   workLabel,
   type Drivetrain,
@@ -37,7 +37,6 @@ export function IntakeScreen() {
   const setStep = useTowy((s) => s.setStep);
   const patchContact = useTowy((s) => s.patchContact);
   const patchVehicle = useTowy((s) => s.patchVehicle);
-  const setPreset = useTowy((s) => s.setPreset);
   const setHelp = useTowy((s) => s.setHelp);
   const setSpare = useTowy((s) => s.setSpare);
   const setWrongFuel = useTowy((s) => s.setWrongFuel);
@@ -58,7 +57,6 @@ export function IntakeScreen() {
   const placeCalls = useTowy((s) => s.placeCalls);
   const garage = useTowy((s) => s.garage);
   const rememberCar = useTowy((s) => s.rememberCar);
-  const useSavedCar = useTowy((s) => s.useSavedCar);
   const [locating, setLocating] = useState<"idle" | "searching" | "device" | "denied" | "failed" | "empty">("idle");
   const searchGen = useRef(0);
 
@@ -110,9 +108,9 @@ export function IntakeScreen() {
       <div key={step} className="view-enter">
       {step === 0 ? (
         <section>
-          <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>What do you need?</h1>
-          <p className="mt-2 text-sm text-muted">On the road, or the small jobs that never need a bay.</p>
-          {garage[0] ? <p className="mt-2 text-sm text-muted">{carMark(garage[0].vehicle)} is saved. Continue skips the vehicle screen.</p> : null}
+          <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>What should the truck do?</h1>
+          <p className="mt-2 text-sm text-muted">You are requesting a truck, the way you would request a ride. The price and the minutes show before anyone rolls.</p>
+          {garage[0] ? <p className="mt-2 text-sm text-muted">{carMark(garage[0].vehicle)} is the car on your profile.</p> : null}
           <div className="mt-6">
             <p className="mb-1 text-sm text-muted">On the road</p>
             {helpOptions.filter((option) => !atCurb(option.id) && option.id !== "tow").map((option) => (
@@ -140,26 +138,9 @@ export function IntakeScreen() {
 
       {step === 1 ? (
         <section>
-          <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>Vehicle</h1>
+          <h1 className="screen-title text-2xl font-medium tracking-tight" data-screen-title tabIndex={-1}>The car</h1>
+          <p className="mt-2 text-sm text-muted">The truck finds this car. The job is {helpLabel(job.help).toLowerCase()}.</p>
           <div className="mt-6 space-y-4">
-            {garage.length ? (
-              <div>
-                <p className="mb-2 text-sm font-medium text-muted">Saved</p>
-                {garage.map((car) => (
-                  <Choice
-                    key={car.id}
-                    selected={carMark(job.vehicle) === carMark(car.vehicle) && job.contactPhone === car.contactPhone}
-                    onClick={() => useSavedCar(car.id)}
-                  >
-                    <span className="block text-fg">{carMark(car.vehicle)}</span>
-                    <span className="mt-1 block text-sm text-muted">
-                      {car.contactName} · {car.vehicle.drivetrain}
-                      {car.vehicle.ev ? " · electric" : ""}
-                    </span>
-                  </Choice>
-                ))}
-              </div>
-            ) : null}
             <Field label="Name">
               <TextInput value={job.contactName} onChange={(e) => patchContact({ contactName: e.target.value })} placeholder="Alex Chen" autoComplete="name" />
             </Field>
@@ -172,20 +153,6 @@ export function IntakeScreen() {
                 autoComplete="tel"
               />
             </Field>
-            <div>
-              <p className="mb-2 text-sm font-medium text-muted">Common vehicles</p>
-              <div className="flex flex-wrap gap-2">
-                {vehiclePresets.map((preset) => (
-                  <Choice
-                    key={preset.label}
-                    selected={job.vehicle.model === preset.vehicle.model && job.vehicle.year === preset.vehicle.year}
-                    onClick={() => setPreset(preset.vehicle)}
-                  >
-                    {preset.label}
-                  </Choice>
-                ))}
-              </div>
-            </div>
             <div className="grid grid-cols-3 gap-2">
               <Field label="Year">
                 <TextInput value={job.vehicle.year} onChange={(e) => patchVehicle({ year: e.target.value })} inputMode="numeric" />
