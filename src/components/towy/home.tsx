@@ -23,11 +23,12 @@ export function HomeScreen() {
             </p>
             <h1 className="mt-2 text-5xl font-medium leading-none tabular-nums">{here.mile}</h1>
             <p className="mt-2 text-sm text-muted">{here.place}</p>
+            <p className="mt-3 text-sm text-muted">A headlight, an oil change, or a tow if it has to move.</p>
           </div>
           <p className="rounded-md bg-bg px-2.5 py-1 text-sm text-muted">{trafficLabel(here.traffic)}</p>
         </div>
         <Btn className="mt-5 w-full" onClick={() => startJob("member")}>
-          I need a tow
+          I need help
         </Btn>
       </section>
 

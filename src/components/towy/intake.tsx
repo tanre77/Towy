@@ -4,7 +4,10 @@ import {
   coverageOptions,
   equipmentLabel,
   equipmentReason,
+  helpOptions,
+  atCurb,
   locations,
+  needsShop,
   phoneOk,
   policeReason,
   positionLabel,
@@ -13,6 +16,7 @@ import {
   vehicleOk,
   vehiclePresets,
   winchReason,
+  workLabel,
   type Drivetrain,
   type Position,
   type Side,
@@ -31,6 +35,9 @@ export function IntakeScreen() {
   const patchContact = useTowy((s) => s.patchContact);
   const patchVehicle = useTowy((s) => s.patchVehicle);
   const setPreset = useTowy((s) => s.setPreset);
+  const setHelp = useTowy((s) => s.setHelp);
+  const setSpare = useTowy((s) => s.setSpare);
+  const setWrongFuel = useTowy((s) => s.setWrongFuel);
   const setStarts = useTowy((s) => s.setStarts);
   const setRolls = useTowy((s) => s.setRolls);
   const setPosition = useTowy((s) => s.setPosition);
@@ -45,11 +52,41 @@ export function IntakeScreen() {
 
   if (!job) return null;
   const location = locations.find((item) => item.id === job.locationId) ?? locations[0];
+  const oilOnEv = job.help === "oil" && job.vehicle.ev;
   const ready = Boolean(job.contactName.trim() && phoneOk(job.contactPhone) && vehicleOk(job.vehicle));
 
   return (
     <div className="rise flex flex-1 flex-col">
       {step === 0 ? (
+        <section>
+          <h1 className="text-2xl font-medium tracking-tight">What do you need?</h1>
+          <p className="mt-2 text-sm text-muted">On the road, or the small jobs that never need a bay.</p>
+          <div className="mt-6">
+            <p className="mb-1 text-sm text-muted">On the road</p>
+            {helpOptions.filter((option) => !atCurb(option.id) && option.id !== "tow").map((option) => (
+              <Choice key={option.id} selected={job.help === option.id} onClick={() => setHelp(option.id)}>
+                <span className="block text-fg">{option.title}</span>
+                <span className="mt-1 block text-sm text-muted">{option.detail}</span>
+              </Choice>
+            ))}
+            <p className="mb-1 mt-6 text-sm text-muted">No shop</p>
+            {helpOptions.filter((option) => atCurb(option.id)).map((option) => (
+              <Choice key={option.id} selected={job.help === option.id} onClick={() => setHelp(option.id)}>
+                <span className="block text-fg">{option.title}</span>
+                <span className="mt-1 block text-sm text-muted">{option.detail}</span>
+              </Choice>
+            ))}
+            {helpOptions.filter((option) => option.id === "tow").map((option) => (
+              <Choice key={option.id} selected={job.help === option.id} onClick={() => setHelp(option.id)}>
+                <span className="block text-fg">{option.title}</span>
+                <span className="mt-1 block text-sm text-muted">{option.detail}</span>
+              </Choice>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {step === 1 ? (
         <section>
           <h1 className="text-2xl font-medium tracking-tight">Vehicle</h1>
           <div className="mt-6 space-y-4">
@@ -129,10 +166,12 @@ export function IntakeScreen() {
         </section>
       ) : null}
 
-      {step === 1 ? (
+      {step === 2 ? (
         <section>
-          <h1 className="text-2xl font-medium tracking-tight">Situation</h1>
+          <h1 className="text-2xl font-medium tracking-tight">{atCurb(job.help) ? "Where it sits" : "Situation"}</h1>
           <div className="mt-6 space-y-5">
+            {atCurb(job.help) ? null : (
+              <>
             <ToggleRow label="Can it start?" value={job.situation.starts} onChange={setStarts} />
             <ToggleRow label="Can it roll?" value={job.situation.rolls} onChange={setRolls} />
             <div>
@@ -155,32 +194,75 @@ export function IntakeScreen() {
                 ))}
               </div>
             </div>
+              </>
+            )}
             <Advice
-              title={equipmentLabel(job.situation.equipment)}
-              body={equipmentReason(job.vehicle, job.situation)}
+              title={needsShop(job) ? equipmentLabel(job.situation.equipment) : workLabel(job)}
+              body={
+                job.help === "tire" && job.situation.spare
+                  ? "Spare or a plug, on the shoulder. You leave if it holds air."
+                  : job.help === "tire"
+                    ? "No spare in the car. This becomes a tow."
+                    : job.help === "jump" && job.vehicle.ev
+                      ? "A jump will not start an electric car. It needs a flatbed."
+                      : job.help === "jump"
+                        ? "They clamp on. If it holds a charge, you drive away."
+                        : job.help === "lockout"
+                          ? "Opened here. The car does not go to a shop."
+                          : job.help === "fuel" && !job.situation.wrongFuel
+                            ? "Two gallons, enough to reach a station."
+                            : job.help === "fuel"
+                          ? "Wrong fuel has to be drained. This becomes a tow."
+                          : job.help === "bulb"
+                            ? "One lamp, where the car is parked. If the housing is sealed, that part is a shop."
+                            : job.help === "oil" && job.vehicle.ev
+                              ? "This car has no engine oil to change."
+                              : job.help === "oil"
+                                ? "Filter and five quarts. Driveway or a lot. Not a bay."
+                                : job.help === "wipers"
+                                  ? "Both blades. A few minutes, where it sits."
+                                  : equipmentReason(job.vehicle, job.situation)
+              }
               onUse={useRecommendations}
               actions={
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <Choice selected={job.situation.equipment === "wheel-lift"} onClick={() => setEquipment("wheel-lift")}>
-                    Wheel-lift
-                  </Choice>
-                  <Choice selected={job.situation.equipment === "flatbed"} onClick={() => setEquipment("flatbed")}>
-                    Flatbed
-                  </Choice>
-                </div>
+                needsShop(job) ? (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Choice selected={job.situation.equipment === "wheel-lift"} onClick={() => setEquipment("wheel-lift")}>
+                      Wheel-lift
+                    </Choice>
+                    <Choice selected={job.situation.equipment === "flatbed"} onClick={() => setEquipment("flatbed")}>
+                      Flatbed
+                    </Choice>
+                  </div>
+                ) : null
               }
             />
-            <Choice selected={job.situation.winch} onClick={() => setWinch(!job.situation.winch)}>
-              <span className="block text-fg">Fish it out</span>
-              <span className="mt-1 block text-sm text-muted">{winchReason(job.situation.position)}</span>
-            </Choice>
+            {job.help === "tire" ? (
+              <Choice selected={job.situation.spare} onClick={() => setSpare(!job.situation.spare)}>
+                <span className="block text-fg">Spare is in the car</span>
+                <span className="mt-1 block text-sm text-muted">{job.situation.spare ? "They can finish it here." : "No spare. A tow is the fix."}</span>
+              </Choice>
+            ) : null}
+            {job.help === "fuel" ? (
+              <Choice selected={job.situation.wrongFuel} onClick={() => setWrongFuel(!job.situation.wrongFuel)}>
+                <span className="block text-fg">Wrong fuel in the tank</span>
+                <span className="mt-1 block text-sm text-muted">{job.situation.wrongFuel ? "That is a shop job. Tow it." : "Just empty. A can is enough."}</span>
+              </Choice>
+            ) : null}
+            {needsShop(job) ? (
+              <Choice selected={job.situation.winch} onClick={() => setWinch(!job.situation.winch)}>
+                <span className="block text-fg">Fish it out</span>
+                <span className="mt-1 block text-sm text-muted">{winchReason(job.situation.position)}</span>
+              </Choice>
+            ) : null}
           </div>
         </section>
       ) : null}
 
-      {step === 2 ? (
+      {step === 3 ? (
         <section>
-          <h1 className="text-2xl font-medium tracking-tight">Location</h1>
+          <h1 className="text-2xl font-medium tracking-tight">{atCurb(job.help) ? "Where is it parked" : "Location"}</h1>
+          {atCurb(job.help) ? <p className="mt-2 text-sm text-muted">Driveway, lot, or street. The nearest mile is enough.</p> : null}
           <div className="mt-4">
             {locations.map((item) => (
               <button
@@ -203,16 +285,18 @@ export function IntakeScreen() {
               </button>
             ))}
           </div>
+          {atCurb(job.help) ? null : (
           <div className="mt-4">
             <Choice selected={job.situation.police} onClick={() => setPolice(!job.situation.police)}>
               <span className="block text-fg">Request an officer</span>
               <span className="mt-1 block text-sm text-muted">{policeReason(job.situation.position, job.situation.side, location.traffic)}</span>
             </Choice>
           </div>
+          )}
         </section>
       ) : null}
 
-      {step === 3 ? (
+      {step === 4 ? (
         <section>
           <h1 className="text-2xl font-medium tracking-tight">Coverage</h1>
           <p className="mt-2 text-sm text-muted">6% applies only after the policy pays.</p>
@@ -234,25 +318,32 @@ export function IntakeScreen() {
             <Row k="Member" v={job.contactName || "—"} />
             <Row k="Vehicle" v={`${job.vehicle.year} ${job.vehicle.make} ${job.vehicle.model}`} />
             <Row k="Stop" v={`${location.road} mile ${location.mile}, ${sideLabel(job.situation.side).toLowerCase()}`} />
+            <Row k="Work" v={workLabel(job)} />
             <Row
               k="Equipment"
-              v={`${equipmentLabel(job.situation.equipment)}${job.situation.winch ? " · winch" : ""}${job.situation.police ? " · officer" : ""}`}
+              v={
+                needsShop(job)
+                  ? `${equipmentLabel(job.situation.equipment)}${job.situation.winch ? " · winch" : ""}${job.situation.police ? " · officer" : ""}`
+                  : atCurb(job.help)
+                    ? "Where it sits"
+                    : "Service truck"
+              }
             />
           </dl>
         </section>
       ) : null}
 
       <div className="mt-8">
-        {step < 3 ? (
-          <Btn className="w-full" disabled={step === 0 && !ready} onClick={() => setStep(step + 1)}>
+        {step < 4 ? (
+          <Btn className="w-full" disabled={(step === 1 && !ready) || (step === 2 && oilOnEv)} onClick={() => setStep(step + 1)}>
             Continue
           </Btn>
         ) : (
-          <Btn className="w-full" disabled={!ready} onClick={placeCalls}>
+          <Btn className="w-full" disabled={!ready || oilOnEv} onClick={placeCalls}>
             Call the yards
           </Btn>
         )}
-        {step === 0 && !ready ? <p className="mt-3 text-sm text-subtle">Add a name and a 10-digit phone so the yard can call back.</p> : null}
+        {step === 1 && !ready ? <p className="mt-3 text-sm text-subtle">Add a name and a 10-digit phone so the yard can call back.</p> : null}
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ export function Frame({ children }: { children: ReactNode }) {
     view === "home"
       ? "Columbus"
       : view === "intake"
-        ? `${step + 1} / 4`
+        ? `${step + 1} / 5`
         : view === "calling"
           ? "Calling"
           : view === "quotes"
@@ -44,7 +44,7 @@ export function Frame({ children }: { children: ReactNode }) {
             ) : null}
             <button type="button" onClick={() => setView("home")} className="flex items-center gap-2">
               <Mark className="size-8" />
-              <span className="text-base font-semibold tracking-tight">towy</span>
+              <span className="text-base font-semibold tracking-tight">shoulder</span>
             </button>
           </div>
           <p className="text-sm text-muted">{kicker}</p>

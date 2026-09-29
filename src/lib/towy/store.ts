@@ -14,6 +14,7 @@ import {
   type Side,
   type Vehicle,
   type View,
+  type HelpKind,
 } from "./model";
 
 const STORAGE_KEY = "towy-desk-v1";
@@ -37,6 +38,9 @@ type State = Persisted & {
   patchContact: (patch: { contactName?: string; contactPhone?: string }) => void;
   patchVehicle: (patch: Partial<Vehicle>) => void;
   setPreset: (vehicle: Vehicle) => void;
+  setHelp: (help: HelpKind) => void;
+  setSpare: (spare: boolean) => void;
+  setWrongFuel: (wrongFuel: boolean) => void;
   setStarts: (starts: boolean) => void;
   setRolls: (rolls: boolean) => void;
   setPosition: (position: Position) => void;
@@ -84,6 +88,18 @@ function save(state: State) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(slice));
 }
 
+function normalizeJob(job: Job): Job {
+  return {
+    ...job,
+    help: job.help ?? "tow",
+    situation: {
+      ...job.situation,
+      spare: job.situation?.spare ?? true,
+      wrongFuel: job.situation?.wrongFuel ?? false,
+    },
+  };
+}
+
 function withActive(state: Persisted, recipe: (job: Job) => Job): Partial<Persisted> {
   if (!state.activeId) return {};
   return {
@@ -110,7 +126,7 @@ export const useTowy = create<State>((set, get) => ({
       set({ hydrated: true });
       return;
     }
-    const storedJobs = (stored.jobs ?? []).filter((job) => job && typeof job.id === "string");
+    const storedJobs = (stored.jobs ?? []).filter((job) => job && typeof job.id === "string").map(normalizeJob);
     const seen = new Set(storedJobs.map((job) => job.id));
     const jobs = [...storedJobs];
     for (const seed of seedJobs) {
@@ -134,7 +150,7 @@ export const useTowy = create<State>((set, get) => ({
       return;
     }
     if (view === "intake" || view === "quotes" || view === "insurer" || view === "operator" || view === "job" || view === "calling") {
-      set({ view: view === "quotes" ? "intake" : "home", step: view === "quotes" ? 3 : 0 });
+      set({ view: view === "quotes" ? "intake" : "home", step: view === "quotes" ? 4 : 0 });
     }
   },
   startJob: (source = "member", lockedCoverage) => {
@@ -178,6 +194,20 @@ export const useTowy = create<State>((set, get) => ({
         }),
       ),
     ),
+  setHelp: (help: HelpKind) =>
+    set(
+      withActive(get(), (job) =>
+        recomputeSituation({
+          ...job,
+          help,
+          situation: { ...job.situation, equipmentTouched: false, winchTouched: false },
+        }),
+      ),
+    ),
+  setSpare: (spare: boolean) =>
+    set(withActive(get(), (job) => recomputeSituation({ ...job, situation: { ...job.situation, spare, equipmentTouched: false, winchTouched: false } }))),
+  setWrongFuel: (wrongFuel: boolean) =>
+    set(withActive(get(), (job) => recomputeSituation({ ...job, situation: { ...job.situation, wrongFuel, equipmentTouched: false, winchTouched: false } }))),
   setStarts: (starts) =>
     set(withActive(get(), (job) => recomputeSituation({ ...job, situation: { ...job.situation, starts } }))),
   setRolls: (rolls) =>

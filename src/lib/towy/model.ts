@@ -15,6 +15,7 @@ export type Side = "right" | "left" | "median" | "ramp";
 export type Coverage = "none" | "roadside" | "full" | "deductible";
 export type Equipment = "wheel-lift" | "flatbed";
 export type Traffic = "light" | "moderate" | "heavy";
+export type HelpKind = "tire" | "jump" | "lockout" | "fuel" | "bulb" | "oil" | "wipers" | "tow";
 export type JobStatus = "draft" | "calling" | "quoted" | "enroute" | "checked" | "arrived" | "done";
 export type View = "home" | "intake" | "calling" | "quotes" | "job" | "insurer" | "operator";
 
@@ -38,6 +39,8 @@ export type Situation = {
   equipmentTouched: boolean;
   winchTouched: boolean;
   policeTouched: boolean;
+  spare: boolean;
+  wrongFuel: boolean;
 };
 
 export type Quote = {
@@ -56,6 +59,7 @@ export type Quote = {
   towyFee: number;
   operatorReceives: number;
   note: string;
+  work: string;
 };
 
 export type Review = {
@@ -78,6 +82,7 @@ export type Job = {
   contactName: string;
   contactPhone: string;
   vehicle: Vehicle;
+  help: HelpKind;
   situation: Situation;
   locationId: string;
   coverage: Coverage;
@@ -90,6 +95,51 @@ export type Job = {
   payment?: { method: "apple-pay"; amount: number } | null;
   source: "member" | "insurer" | "seed";
 };
+
+export function atCurb(help: HelpKind): boolean {
+  return help === "bulb" || help === "oil" || help === "wipers";
+}
+
+export function helpLabel(help: HelpKind): string {
+  if (help === "tire") return "Flat tire";
+  if (help === "jump") return "Jump start";
+  if (help === "lockout") return "Lockout";
+  if (help === "fuel") return "Fuel";
+  if (help === "bulb") return "Headlight";
+  if (help === "oil") return "Oil change";
+  if (help === "wipers") return "Wipers";
+  return "Tow";
+}
+
+export const helpOptions: { id: HelpKind; title: string; detail: string }[] = [
+  { id: "tire", title: "Flat tire", detail: "Spare or a plug, on the shoulder. A shop only if there is no spare." },
+  { id: "jump", title: "Jump start", detail: "A pack on the battery. You drive away if it holds a charge." },
+  { id: "lockout", title: "Lockout", detail: "Keys inside. Opened where it sits." },
+  { id: "fuel", title: "Out of gas", detail: "Two gallons, enough to reach a station. Wrong fuel is a tow." },
+  { id: "bulb", title: "Headlight", detail: "One bulb, in the driveway or a lot. A sealed housing is a shop." },
+  { id: "oil", title: "Oil change", detail: "Filter and five quarts, where the car is parked." },
+  { id: "wipers", title: "Wipers", detail: "Both blades. Done in a few minutes." },
+  { id: "tow", title: "Tow", detail: "It will not roll, or it has to come out of a ditch." },
+];
+
+export function needsShop(job: Pick<Job, "help" | "vehicle" | "situation">): boolean {
+  if (job.help === "tow") return true;
+  if (job.help === "tire" && !job.situation.spare) return true;
+  if (job.help === "fuel" && job.situation.wrongFuel) return true;
+  if (job.help === "jump" && job.vehicle.ev) return true;
+  return false;
+}
+
+export function workLabel(job: Pick<Job, "help" | "vehicle" | "situation">): string {
+  if (needsShop(job)) return "Tow";
+  if (job.help === "tire") return "Spare swap";
+  if (job.help === "jump") return "Jump start";
+  if (job.help === "lockout") return "Lockout";
+  if (job.help === "bulb") return "Headlight";
+  if (job.help === "oil") return "Oil change";
+  if (job.help === "wipers") return "Wipers";
+  return "Fuel drop";
+}
 
 export function trafficLabel(traffic: Traffic): string {
   if (traffic === "heavy") return "Heavy traffic";
@@ -414,29 +464,55 @@ export function splitBill(total: number, coverage: Coverage) {
 export function recomputeSituation(job: Job): Job {
   const location = locationById(job.locationId);
   const situation: Situation = { ...job.situation };
-  if (!situation.equipmentTouched) situation.equipment = recommendEquipment(job.vehicle, situation);
-  if (!situation.winchTouched) situation.winch = recommendWinch(situation.position);
-  if (!situation.policeTouched) situation.police = recommendPolice(situation.position, situation.side, location.traffic);
+  const shop = needsShop(job);
+  if (!shop) {
+    if (!situation.equipmentTouched) situation.equipment = "wheel-lift";
+    if (!situation.winchTouched) situation.winch = false;
+  } else {
+    if (!situation.equipmentTouched) situation.equipment = recommendEquipment(job.vehicle, situation);
+    if (!situation.winchTouched) situation.winch = recommendWinch(situation.position);
+  }
+  if (!situation.policeTouched) situation.police = atCurb(job.help) ? false : recommendPolice(situation.position, situation.side, location.traffic);
   return { ...job, situation };
+}
+
+function serviceCall(company: Company, help: HelpKind): number {
+  if (help === "bulb") return round2(company.hook * 0.4 + 22);
+  if (help === "oil") return round2(company.hook * 0.55 + 48);
+  if (help === "wipers") return round2(company.hook * 0.35 + 32);
+  const factor = help === "jump" ? 0.5 : help === "fuel" ? 0.45 : help === "lockout" ? 0.6 : 0.7;
+  const fuel = help === "fuel" ? 12 : 0;
+  return round2(company.hook * factor + fuel);
 }
 
 function quoteFor(company: Company, job: Job): Quote {
   const miles = company.miles[job.locationId] ?? 8;
   const location = locationById(job.locationId);
-  const flatbed = job.situation.equipment === "flatbed";
-  const hook = company.hook;
+  const shop = needsShop(job);
+  const flatbed = shop && job.situation.equipment === "flatbed";
+  const hook = shop ? company.hook : serviceCall(company, job.help);
   const mileage = round2(miles * company.perMile);
   const equipmentFee = flatbed ? company.flatbed : 0;
-  const winchFee = job.situation.winch ? company.winch : 0;
-  const afterHours = SCENARIO.afterHours ? AFTER_HOURS_FEE : 0;
+  const winchFee = shop && job.situation.winch ? company.winch : 0;
+  const afterHours = !atCurb(job.help) && SCENARIO.afterHours ? AFTER_HOURS_FEE : 0;
   const policeWait = job.situation.police ? 25 : 0;
   const total = round2(hook + mileage + equipmentFee + winchFee + afterHours + policeWait);
   const money = splitBill(total, job.coverage);
   const trafficAdd = location.traffic === "heavy" ? 8 : location.traffic === "moderate" ? 4 : 1;
   const etaMin = Math.max(12, Math.min(75, Math.round(8 + miles * 1.65 + company.bias + trafficAdd + (flatbed ? company.flatbedEta : 0) + (SCENARIO.afterHours ? 3 : 0))));
   const notes: string[] = [];
-  if (job.vehicle.ev && !company.evCertified) notes.push("Not EV-certified. Confirm transport mode before loading.");
-  if (job.vehicle.ev && company.evCertified) notes.push("EV-certified flatbed.");
+  if (!shop && job.help === "tire") notes.push("Spare goes on here. You leave if it holds air.");
+  if (!shop && job.help === "jump") notes.push("Jump pack. A shop is only if it will not hold a charge.");
+  if (!shop && job.help === "lockout") notes.push("Unlocked in place. No tow.");
+  if (!shop && job.help === "fuel") notes.push("Two gallons. Enough to reach a station.");
+  if (!shop && job.help === "bulb") notes.push("One bulb. A sealed lamp housing still goes to a shop.");
+  if (!shop && job.help === "oil") notes.push("Filter and five quarts. Driveway or a lot, not a bay.");
+  if (!shop && job.help === "wipers") notes.push("Both blades, where the car is parked.");
+  if (shop && job.help === "tire") notes.push("No spare. This one has to be towed.");
+  if (shop && job.help === "fuel") notes.push("Wrong fuel has to be drained. This is a tow.");
+  if (shop && job.help === "jump") notes.push("A jump will not start an electric car. Flatbed.");
+  if (shop && job.vehicle.ev && !company.evCertified && job.help !== "jump") notes.push("Not EV-certified. Confirm transport mode before loading.");
+  if (shop && job.vehicle.ev && company.evCertified) notes.push("EV-certified flatbed.");
   if (job.situation.police) notes.push("They will stage until the officer is on scene.");
   if (!notes.length) notes.push("Price includes the Monday night rate.");
   return {
@@ -452,6 +528,7 @@ function quoteFor(company: Company, job: Job): Quote {
     total,
     ...money,
     note: notes[0],
+    work: workLabel(job),
   };
 }
 
@@ -460,7 +537,10 @@ export function buildCalls(job: Job): CallResult[] {
   const ranked = [...companies].sort((a, b) => (a.miles[ready.locationId] ?? 99) - (b.miles[ready.locationId] ?? 99));
   const results: CallResult[] = [];
   for (const company of ranked) {
-    if (ready.situation.winch && !company.canWinch) {
+    const shop = needsShop(ready);
+    if (!shop) {
+      results.push({ companyId: company.id, available: true, quote: quoteFor(company, ready) });
+    } else if (ready.situation.winch && !company.canWinch) {
       results.push({ companyId: company.id, available: false, decline: "No winch on tonight's truck." });
     } else if (ready.situation.equipment === "flatbed" && !company.canFlatbed) {
       results.push({ companyId: company.id, available: false, decline: "No flatbed free." });
@@ -493,11 +573,12 @@ export function callLines(company: Company, job: Job, result: CallResult): strin
     return [...open, result.decline ?? "We can't take this one."];
   }
   const quote = result.quote;
-  return [
-    ...open,
-    `${equipmentLabel(job.situation.equipment)}${job.situation.winch ? " and a winch" : ""}. We can be there in ${quote.etaMin} minutes.`,
-    `Estimate ${usd(quote.total)}. ${quote.note}`,
-  ];
+  const ask = needsShop(job)
+    ? `${equipmentLabel(job.situation.equipment)}${job.situation.winch ? " and a winch" : ""}. We can be there in ${quote.etaMin} minutes.`
+    : atCurb(job.help)
+      ? `${workLabel(job)}. Where the car is parked. ${quote.etaMin} minutes.`
+      : `${workLabel(job)}. On the shoulder, not a shop. ${quote.etaMin} minutes.`;
+  return [...open, ask, `Estimate ${usd(quote.total)}. ${quote.note}`];
 }
 
 export function halfwayUpdate(job: Job): { etaMin: number; total: number; note: string } {
@@ -521,6 +602,7 @@ export function blankJob(source: Job["source"] = "member"): Job {
     contactName: "",
     contactPhone: "",
     vehicle: { year: "2019", make: "Honda", model: "Civic", drivetrain: "FWD", tires: "215/55R16", ev: false },
+    help: "tow",
     situation: {
       starts: false,
       rolls: true,
@@ -532,6 +614,8 @@ export function blankJob(source: Job["source"] = "member"): Job {
       equipmentTouched: false,
       winchTouched: false,
       policeTouched: false,
+      spare: true,
+      wrongFuel: false,
     },
     locationId: "i70-108",
     coverage: "roadside",
@@ -623,6 +707,8 @@ export const seedJobs: Job[] = [
       equipmentTouched: true,
       winchTouched: true,
       policeTouched: true,
+      spare: true,
+      wrongFuel: false,
     },
     locationId: "i71-111",
     coverage: "roadside",
@@ -644,6 +730,8 @@ export const seedJobs: Job[] = [
       equipmentTouched: true,
       winchTouched: true,
       policeTouched: true,
+      spare: true,
+      wrongFuel: false,
     },
     locationId: "i270-22",
     coverage: "deductible",

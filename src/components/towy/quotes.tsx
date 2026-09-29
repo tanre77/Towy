@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ApplePayButton, Btn, LineItems, Split, Stars } from "@/components/towy/bits";
-import { companyById, companyScore, equipmentLabel, usd } from "@/lib/towy/model";
+import { atCurb, companyById, companyScore, needsShop, equipmentLabel, usd, workLabel } from "@/lib/towy/model";
 import { useActiveJob, useTowy } from "@/lib/towy/store";
 
 export function QuotesScreen() {
@@ -34,8 +34,16 @@ export function QuotesScreen() {
     <div className="rise flex flex-1 flex-col">
       <h1 className="text-2xl font-medium tracking-tight">Estimates</h1>
       <p className="mt-2 text-sm text-muted">
-        {equipmentLabel(job.situation.equipment)}
-        {job.situation.winch ? ", winch" : ""}. Nearest yard that can take it.
+        {needsShop(job) ? (
+          <>
+            {equipmentLabel(job.situation.equipment)}
+            {job.situation.winch ? ", winch" : ""}. Nearest yard that can take it.
+          </>
+        ) : atCurb(job.help) ? (
+          <>{workLabel(job)}. Where the car is parked. No shop.</>
+        ) : (
+          <>{workLabel(job)}. Done on the shoulder. Nearest truck that can take it.</>
+        )}
       </p>
       {declines.length ? (
         <ul className="mt-4 space-y-1">

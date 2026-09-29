@@ -71,10 +71,10 @@ export function Stars({ value, count = 5, labeled = true }: { value: number; cou
 
 export function Split({ quote }: { quote: Quote }) {
   const rows: [string, string, boolean][] = [
-    ["Tow", usd(quote.total), false],
+    [quote.work === "Tow" ? "Tow" : quote.work, usd(quote.total), false],
     ["Insurance", usd(quote.covered), false],
     ["Member", usd(quote.driverPays), true],
-    ["Towy 6%", usd(quote.towyFee), true],
+    ["Shoulder 6%", usd(quote.towyFee), true],
     ["Yard", usd(quote.operatorReceives), false],
   ];
   return (
@@ -92,7 +92,7 @@ export function Split({ quote }: { quote: Quote }) {
 export function LineItems({ quote }: { quote: Quote }) {
   const company = companyById(quote.companyId);
   const rows = [
-    ["Hook", quote.hook],
+    [quote.work === "Tow" ? "Hook" : "Service", quote.hook],
     [`Mileage · ${quote.miles.toFixed(1)} mi`, quote.mileage],
     ["Flatbed", quote.equipmentFee],
     ["Winch", quote.winchFee],
